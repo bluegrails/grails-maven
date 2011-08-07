@@ -30,7 +30,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @version $Id$
  * @description Creates a new controller.
  * @goal create-controller
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.1
  */
 public class GrailsCreateControllerMojo extends AbstractGrailsMojo {

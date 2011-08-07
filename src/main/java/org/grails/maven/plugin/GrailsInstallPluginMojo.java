@@ -36,7 +36,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Installs a plugin.
  * @goal install-plugin
  * @requiresProject true
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.4
  */
 public class GrailsInstallPluginMojo extends AbstractGrailsMojo {

@@ -26,7 +26,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Uninstalls a plugin.
  * @goal uninstall-plugin
  * @requiresProject false
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.4
  */
 public class GrailsUninstallPluginMojo extends AbstractGrailsMojo {

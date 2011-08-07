@@ -30,7 +30,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * Grails environment when run.
  * @goal create-integration-test
  * @requiresProject false
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.1
  */
 public class GrailsCreateIntegrationTestMojo extends AbstractGrailsMojo {

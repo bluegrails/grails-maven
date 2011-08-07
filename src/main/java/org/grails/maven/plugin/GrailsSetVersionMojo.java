@@ -27,7 +27,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @goal set-version
  * @phase validate
  * @requiresProject true
- * @requiresDependencyResolution
+ * @requiresDependencyResolution test
  * @since 1.2.1
  */
 public class GrailsSetVersionMojo extends AbstractGrailsMojo {

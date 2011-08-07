@@ -26,7 +26,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Upgrades a Grails application.
  * @goal upgrade
  * @requiresProject false
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 1.3.7
  */
 public class GrailsUpgradeMojo extends AbstractGrailsMojo {

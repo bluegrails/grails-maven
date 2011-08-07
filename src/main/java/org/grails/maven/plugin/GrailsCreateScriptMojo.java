@@ -27,7 +27,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Creates a Grails Gant Script.
  * @goal create-script
  * @requiresProject false
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.1
  */
 public class GrailsCreateScriptMojo extends AbstractGrailsMojo {

@@ -26,7 +26,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Runs a Grails application in Jetty from its WAR.
  * @goal run-war
  * @requiresProject true
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.4
  */
 public class GrailsRunWarMojo extends AbstractGrailsMojo {

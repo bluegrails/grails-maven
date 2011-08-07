@@ -26,7 +26,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Cleans a Grails project.
  * @goal clean
  * @requiresProject true
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.1
  */
 public class GrailsCleanMojo extends AbstractGrailsMojo {

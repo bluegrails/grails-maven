@@ -26,7 +26,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Runs a Grails application in Jetty with HTTPS listener.
  * @goal run-app-https
  * @requiresProject true
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.3
  */
 public class GrailsRunAppHttpsMojo extends AbstractGrailsMojo {

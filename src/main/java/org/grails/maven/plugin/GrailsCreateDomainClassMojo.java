@@ -27,7 +27,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Creates a new domain class.
  * @goal create-domain-class
  * @requiresProject false
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.1
  */
 public class GrailsCreateDomainClassMojo extends AbstractGrailsMojo {

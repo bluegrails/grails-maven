@@ -31,7 +31,7 @@ import java.io.File;
  * @goal package-plugin
  * @phase package
  * @requiresProject true
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.4
  */
 public class GrailsPackagePluginMojo extends AbstractGrailsMojo {

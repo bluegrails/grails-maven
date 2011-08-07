@@ -37,7 +37,7 @@ import java.util.Map;
  * project.
  * @goal create-pom
  * @requiresProject false
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.1
  */
 public class CreatePomMojo extends AbstractMojo {

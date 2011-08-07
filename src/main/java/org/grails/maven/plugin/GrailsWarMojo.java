@@ -26,7 +26,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Creates a WAR archive.
  * @goal war
  * @requiresProject false
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.1
  */
 public class GrailsWarMojo extends AbstractGrailsMojo {

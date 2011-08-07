@@ -26,7 +26,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Creates a new GSP tag library.
  * @goal create-tag-lib
  * @requiresProject false
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.1
  */
 public class GrailsCreateTagLibMojo extends AbstractGrailsMojo {

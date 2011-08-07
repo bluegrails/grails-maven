@@ -22,7 +22,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Creates a WAR archive and register it in maven.
  * @goal maven-grails-app-war
  * @phase package
- * @requiresDependencyResolution
+ * @requiresDependencyResolution  test
  * @since 1.1
  */
 public class MvnGrailsAppWarMojo extends MvnWarMojo {

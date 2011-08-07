@@ -27,7 +27,7 @@ import org.grails.maven.plugin.AbstractGrailsMojo;
  * @description Runs a Grails console inside the current project.
  * @goal console
  * @requiresProject true
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 1.0
  */
 public class GrailsConsoleMojo extends AbstractGrailsMojo {

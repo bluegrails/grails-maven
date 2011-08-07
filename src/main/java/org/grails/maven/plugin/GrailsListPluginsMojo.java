@@ -26,7 +26,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Lists the available plugins.
  * @goal list-plugins
  * @requiresProject false
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.4
  */
 public class GrailsListPluginsMojo extends AbstractGrailsMojo {

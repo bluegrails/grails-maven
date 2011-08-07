@@ -28,7 +28,7 @@ import org.apache.maven.plugin.MojoFailureException;
  * class.
  * @goal generate-all
  * @requiresProject false
- * @requiresDependencyResolution runtime
+ * @requiresDependencyResolution test
  * @since 0.1
  */
 public class GrailsGenerateAllMojo extends AbstractGrailsMojo {
