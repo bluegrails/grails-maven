@@ -239,8 +239,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
                 }
             }
 
-            if (metadataModified) metadata.persist();
-
             // If the command is running in non-interactive mode, we
             // need to pass on the relevant argument.
             if (this.nonInteractive) {
