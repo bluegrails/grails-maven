@@ -190,9 +190,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         }
 
         // Now add the project dependencies if necessary.
-        if (includeProjectDeps) {
+//        if (includeProjectDeps) {
             deps.addAll(this.project.getRuntimeArtifacts());
-        }
+//        }
 
         URL[] classpath;
         try {
@@ -255,6 +255,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
             // Simply rethrow it.
             throw ex;
         } catch (Exception ex) {
+          getLog().error(ex);
+          ex.printStackTrace();
             throw new MojoExecutionException("Unable to start Grails", ex);
         }
     }
