@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 
 import jline.Terminal;
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
@@ -239,6 +240,12 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         invokeStaticMethod(cls, "initLogging", new Object[]{"classpath:grails-maven/log4j.properties"});
         final GrailsLauncher launcher = new GrailsLauncher(rootLoader, grailsHomePath, basedir.getAbsolutePath());
         launcher.setPlainOutput(true);
+
+        /**
+         * this collects the different dependency levels (compile, runtime, test) and puts them into the correct arrays to pass through
+         * to the Grails script launcher. If using Maven, you should *never* see an Ivy message and if you do, immediately stop your build, figure
+         * out the incorrect dependency, delete the ~/.ivy2 directory and try again.
+         */
         configureBuildSettings(launcher);
 
         // Search for all Grails plugin dependencies and install
@@ -253,6 +260,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
             metadataModified |= installGrailsPlugin(artifact, metadata, launcher);
           }
         }
+
+        // always update application.properties - version control systems are clever enough to know when a file hasn't actually changed its content
+        // so there is no reason to not write this every time. This will cause a failure if you don't manually change the application.properties file
+        // when doing a release:prepare
 
         metadata.persist();
 
@@ -574,6 +585,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     if (pluginName.startsWith(PLUGIN_PREFIX)) {
       pluginName = pluginName.substring(PLUGIN_PREFIX.length());
     }
+    
+
     getLog().info("Installing plugin " + pluginName + ":" + pluginVersion);
 
     // The directory the plugin will be unzipped to.
@@ -581,6 +594,13 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
     // Unpack the plugin if it hasn't already been.
     if (!targetDir.exists()) {
+      // check to determine if an older version of the plugin is already installed and if so, delete it
+      for( File pluginDir : launcher.getProjectPluginsDir().listFiles() ) {
+        if (pluginDir.getName().startsWith(pluginName + "-")) { // match, need to delete it
+          FileUtils.deleteDirectory(pluginDir);
+        }
+      }
+
       targetDir.mkdirs();
 
       final ZipUnArchiver unzipper = new ZipUnArchiver();
