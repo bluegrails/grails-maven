@@ -594,6 +594,13 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
     // Unpack the plugin if it hasn't already been.
     if (!targetDir.exists()) {
+      // Ideally we need to now do two things (a) see if we are running JDK7
+      // and (b) determine if -Dplugin.groupId.artifactId has been set - if this is so, we want to do a Files.createLink
+      // to the directory specified by  the -D flag. We should probably also check if the targetDir is a link and
+      // the -Dflag hasn't been set, in which case we'd want to remove the link and install the plugin (and let the user
+      // know this has happened.
+
+
       // check to determine if an older version of the plugin is already installed and if so, delete it
       for( File pluginDir : launcher.getProjectPluginsDir().listFiles() ) {
         if (pluginDir.getName().startsWith(pluginName + "-")) { // match, need to delete it
