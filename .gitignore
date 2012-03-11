@@ -5,3 +5,6 @@ target
 .svn
 .DS_Store
 *.iml
+.classpath
+.settings/org.maven.ide.eclipse.prefs
+.settings/org.eclipse.jdt.core.prefs
