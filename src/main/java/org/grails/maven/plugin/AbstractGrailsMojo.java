@@ -592,6 +592,24 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     // The directory the plugin will be unzipped to.
     final File targetDir = new File(launcher.getProjectPluginsDir(), pluginName + "-" + pluginVersion);
 
+    String systemPluginAsLink = plugin.getGroupId() + ":" + pluginName;
+    
+    boolean isJdk7 = false;
+      
+    try {
+      Class.forName("java.nio.files.Files");
+      isJdk7 = true;
+
+      // if the target exists, is a symbolic link and the system flag isn't there, remove the symbolic link
+      if (targetDir.exists() && java.nio.file.Files.isSymbolicLink(targetDir.toPath()) && System.getProperty(systemPluginAsLink) == null) {
+        getLog().warn("Removing symbolic link to " + systemPluginAsLink + " as not specified as linkable.");
+        java.nio.file.Files.delete(targetDir.toPath());
+      }
+    } catch (Exception ex) {
+    }
+    
+    
+    
     // Unpack the plugin if it hasn't already been.
     if (!targetDir.exists()) {
       // Ideally we need to now do two things (a) see if we are running JDK7
@@ -599,11 +617,15 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       // to the directory specified by  the -D flag. We should probably also check if the targetDir is a link and
       // the -Dflag hasn't been set, in which case we'd want to remove the link and install the plugin (and let the user
       // know this has happened.
-
+      // We wouldn't actually want this to be allowed when doing a release however.... So people should make sure they don't
+      // specify them, they they'll be installed.
 
       // check to determine if an older version of the plugin is already installed and if so, delete it
       for( File pluginDir : launcher.getProjectPluginsDir().listFiles() ) {
         if (pluginDir.getName().startsWith(pluginName + "-")) { // match, need to delete it
+          if (isJdk7) {
+            java.nio.file.Files.createSymbolicLink()
+          }
           FileUtils.deleteDirectory(pluginDir);
         }
       }

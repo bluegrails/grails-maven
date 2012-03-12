@@ -250,7 +250,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.3.2</version>
                 <configuration>
-                    <source>1.6</source> <!-- 5 is obsolete, 6 is almost obsolete -->
+                    <source>1.7</source> <!-- 5 is obsolete, 6 is almost obsolete -->
                     <target>1.6</target>
                 </configuration>
             </plugin>
