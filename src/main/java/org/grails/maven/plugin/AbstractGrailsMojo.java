@@ -595,7 +595,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     String systemPluginAsLink = plugin.getGroupId() + ":" + pluginName;
     
     boolean isJdk7 = false;
-      
+
+    /*
     try {
       Class.forName("java.nio.files.Files");
       isJdk7 = true;
@@ -607,6 +608,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       }
     } catch (Exception ex) {
     }
+    */
     
     
     
@@ -623,9 +625,11 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       // check to determine if an older version of the plugin is already installed and if so, delete it
       for( File pluginDir : launcher.getProjectPluginsDir().listFiles() ) {
         if (pluginDir.getName().startsWith(pluginName + "-")) { // match, need to delete it
+          /*
           if (isJdk7) {
             java.nio.file.Files.createSymbolicLink()
           }
+          */
           FileUtils.deleteDirectory(pluginDir);
         }
       }
