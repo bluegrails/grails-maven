@@ -51,13 +51,13 @@
           <lifecycle>
             <id>default</id>
             <phases>
-              <validate>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:validate</validate>
-              <initialize>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:init</initialize>
-              <generate-sources>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:config-directories</generate-sources>
-              <compile>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:maven-compile</compile>
-              <test>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:maven-test</test>
-              <package>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:maven-grails-app-war</package>
-              <integration-test>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:maven-functional-test</integration-test>
+              <validate>org.grails.maven.plugin:grails-maven-plugin:validate</validate>
+              <initialize>org.grails.maven.plugin:grails-maven-plugin:init</initialize>
+              <generate-sources>org.grails.maven.plugin:grails-maven-plugin:config-directories</generate-sources>
+              <compile>org.grails.maven.plugin:grails-maven-plugin:maven-compile</compile>
+              <test>org.grails.maven.plugin:grails-maven-plugin:maven-test</test>
+              <package>org.grails.maven.plugin:grails-maven-plugin:maven-grails-app-war</package>
+              <integration-test>org.grails.maven.plugin:grails-maven-plugin:maven-functional-test</integration-test>
               <install>org.apache.maven.plugins:maven-install-plugin:install</install>
               <deploy>org.apache.maven.plugins:maven-deploy-plugin:deploy</deploy>
             </phases>
@@ -67,7 +67,7 @@
             <phases>
               <clean>
                 org.apache.maven.plugins:maven-clean-plugin:clean,
-                com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:clean
+                org.grails.maven.plugin:grails-maven-plugin:clean
               </clean>
             </phases>
           </lifecycle>
@@ -84,12 +84,12 @@
           <lifecycle>
             <id>default</id>
             <phases>
-              <validate>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:validate-plugin</validate>
-              <initialize>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:init-plugin</initialize>
-              <generate-sources>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:config-directories</generate-sources>
-              <compile>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:maven-compile</compile>
-              <test>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:maven-test</test>
-              <package>com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:package-plugin</package>
+              <validate>org.grails.maven.plugin:grails-maven-plugin:validate-plugin</validate>
+              <initialize>org.grails.maven.plugin:grails-maven-plugin:init-plugin</initialize>
+              <generate-sources>org.grails.maven.plugin:grails-maven-plugin:config-directories</generate-sources>
+              <compile>org.grails.maven.plugin:grails-maven-plugin:maven-compile</compile>
+              <test>org.grails.maven.plugin:grails-maven-plugin:maven-test</test>
+              <package>org.grails.maven.plugin:grails-maven-plugin:package-plugin</package>
               <install>org.apache.maven.plugins:maven-install-plugin:install</install>
               <deploy>org.apache.maven.plugins:maven-deploy-plugin:deploy</deploy>
             </phases>
@@ -99,7 +99,7 @@
             <phases>
               <clean>
                 org.apache.maven.plugins:maven-clean-plugin:clean,
-                com.bluetrainsoftware.bluegrails.plugins:grails-maven-plugin:clean
+                org.grails.maven.plugin:grails-maven-plugin:clean
               </clean>
             </phases>
           </lifecycle>
