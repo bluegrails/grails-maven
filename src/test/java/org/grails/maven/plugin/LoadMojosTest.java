@@ -27,7 +27,7 @@ import java.io.File;
 public class LoadMojosTest extends AbstractMojoTestCase {
 
     private void mojoTest(String pluginConfig, String mojoName, Class mojoClass) throws Exception {
-        File testPom = getTestFile("src/test/resources/org/grails/maven/plugin/" + pluginConfig);
+        File testPom = getTestFile("src/test/resources/com/bluetrainsoftware/bluegrails/maven/plugin/" + pluginConfig);
         Object mojo = lookupMojo(mojoName, testPom);
         assertNotNull(mojo);
         assertEquals(mojo.getClass(), mojoClass);

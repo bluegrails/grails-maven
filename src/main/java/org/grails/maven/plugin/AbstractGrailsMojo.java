@@ -449,7 +449,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   }
 
   private MavenProject getPluginProject() throws ProjectBuildingException {
-    final Artifact pluginArtifact = findArtifact(this.project.getPluginArtifacts(), "org.grails", "grails-maven-plugin");
+    final Artifact pluginArtifact = findArtifact(this.project.getPluginArtifacts(), "com.bluetrainsoftware.bluegrails.plugins", "grails-maven-plugin");
     return this.projectBuilder.buildFromRepository(pluginArtifact, this.remoteRepositories, this.localRepository);
   }
 

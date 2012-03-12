@@ -87,83 +87,38 @@
     </prerequisites>
 
     <dependencies>
-        <dependency>
-            <groupId>jline</groupId>
-            <artifactId>jline</artifactId>
-            <version>1.0</version>
-        </dependency>
-                
-        <dependency>
-            <groupId>org.grails</groupId>
-            <artifactId>grails-bootstrap</artifactId>
-            <version>${grails-bootstrap.version}</version>
-        </dependency>
+      <dependency>
+        <groupId>jline</groupId>
+        <artifactId>jline</artifactId>
+        <version>1.0</version>
+      </dependency>
 
-        <dependency>
-            <groupId>org.grails</groupId>
-            <artifactId>grails-launcher</artifactId>
-            <version>${grails-launcher.version}</version>
-        </dependency>
+      <dependency>
+        <groupId>org.grails</groupId>
+        <artifactId>grails-bootstrap</artifactId>
+        <version>${grails-bootstrap.version}</version>
+      </dependency>
 
-        <dependency>
-            <groupId>org.grails</groupId>
-            <artifactId>grails-core</artifactId>
-            <version>${grails-core.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.grails</groupId>
-                    <artifactId>grails-web</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.hibernate.java-persistence</groupId>
-                    <artifactId>jpa-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+      <dependency>
+        <groupId>org.grails</groupId>
+        <artifactId>grails-launcher</artifactId>
+        <version>${grails-launcher.version}</version>
+      </dependency>
 
-        <dependency>
-            <groupId>org.grails</groupId>
-            <artifactId>grails-scripts</artifactId>
-            <version>${grails-scripts.version}</version>
-            <scope>runtime</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.grails</groupId>
-                    <artifactId>grails-plugin-log4j</artifactId>
-                </exclusion>
-            </exclusions>            
-        </dependency>
+      <dependency>
+        <groupId>org.grails</groupId>
+        <artifactId>grails-dependencies</artifactId>
+        <version>${grails.version}</version>
+        <type>pom</type>
+        <scope>provided</scope>
+      </dependency>
 
-        <dependency>
-            <groupId>org.grails</groupId>
-            <artifactId>grails-resources</artifactId>
-            <version>${grails-scripts.version}</version>
-            <scope>runtime</scope>
-        </dependency>
+      <dependency>
+        <groupId>nz.ac.auckland.composite</groupId>
+        <artifactId>composite-grails-logging-deploy</artifactId>
+        <version>[2,3)</version>
+      </dependency>
 
-        <dependency>
-            <groupId>org.grails</groupId>
-            <artifactId>grails-plugin-tomcat</artifactId>
-            <version>${grails.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.grails</groupId>
-                    <artifactId>grails-web</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.hibernate.java-persistence</groupId>
-                    <artifactId>jpa-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
 
         <!-- Required by the "create-pom" goal because it contains the template
             POM for a Grails project. -->
@@ -231,6 +186,7 @@
 
     <build>
         <plugins>
+            <!--
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-gpg-plugin</artifactId>
@@ -244,6 +200,7 @@
                 </execution>
               </executions>
             </plugin>
+            -->
                         
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
