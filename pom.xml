@@ -37,12 +37,6 @@
       </developer>
     </developers>
 
-    <parent>
-      <groupId>org.sonatype.oss</groupId>
-      <artifactId>oss-parent</artifactId>
-      <version>7</version>
-    </parent>
-    
     <properties>
         <!-- Prerequisites -->
         <maven.version>2.0.5</maven.version>
@@ -113,11 +107,13 @@
         <scope>provided</scope>
       </dependency>
 
+<!--
       <dependency>
         <groupId>nz.ac.auckland.composite</groupId>
         <artifactId>composite-grails-logging-deploy</artifactId>
         <version>[2,3)</version>
       </dependency>
+-->
 
 
         <!-- Required by the "create-pom" goal because it contains the template
@@ -128,6 +124,12 @@
             <version>${grails-maven-archetype.version}</version>
             <scope>runtime</scope>
         </dependency>
+      <dependency>
+        <groupId>org.grails</groupId>
+        <artifactId>grails-scripts</artifactId>
+        <version>${grails-maven-archetype.version}</version>
+        <scope>runtime</scope>
+      </dependency>
 
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -503,15 +505,6 @@
                     <family>Windows</family>
                 </os>
             </activation>
-          <repositories>
-              <repository>
-                  <releases>
-                      <enabled>true</enabled>
-                  </releases>
-                  <id>grailsRepo</id>
-                  <url>http://repo.grails.org/grails/core</url>
-              </repository>
-          </repositories>
             <dependencies>
                 <dependency>
                     <groupId>com.sun</groupId>
@@ -529,15 +522,6 @@
                     <family>unix</family>
                 </os>
             </activation>
-          <repositories>
-              <repository>
-                  <releases>
-                      <enabled>true</enabled>
-                  </releases>
-                  <id>grailsRepo</id>
-                  <url>http://repo.grails.org/grails/core</url>
-              </repository>
-          </repositories>
             <dependencies>
                 <dependency>
                     <groupId>com.sun</groupId>
@@ -555,15 +539,6 @@
                     <family>mac</family>
                 </os>
             </activation>
-          <repositories>
-              <repository>
-                  <releases>
-                      <enabled>true</enabled>
-                  </releases>
-                  <id>grailsRepo</id>
-                  <url>http://repo.grails.org/grails/core</url>
-              </repository>
-          </repositories>
             <dependencies>
                 <dependency>
                     <groupId>com.sun</groupId>

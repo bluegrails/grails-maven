@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Set;
 
 import jline.Terminal;
-import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
@@ -40,6 +39,7 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactCollector;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
+import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -394,14 +394,18 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       /*
       * Convert the Maven dependencies into Maven artifacts so that they can be resolved.
       */
-      final List<Artifact> unresolvedArtifacts = dependenciesToArtifacts(unresolvedDependencies);
+//      final List<Artifact> unresolvedArtifacts = dependenciesToArtifacts(unresolvedDependencies);
 
+      
+      Artifact mojoArtifact = this.artifactFactory.createBuildArtifact("com.bluetrainsoftware.bluegrails", "maven-project", "1", "pom");
+      
       /*
       * Resolve each artifact.  This will get all transitive artifacts AND eliminate conflicts.
       */
-      for (Artifact unresolvedArtifact : unresolvedArtifacts) {
-        resolvedArtifacts.addAll(resolveDependenciesToArtifacts(unresolvedArtifact, unresolvedDependencies));
-      }
+      Set<Artifact> unresolvedArtifacts = MavenMetadataSource.createArtifacts(this.artifactFactory, unresolvedDependencies, null, null, null);
+      
+      resolvedArtifacts.addAll(artifactResolver.resolveTransitively(unresolvedArtifacts, mojoArtifact,
+        remoteRepositories, localRepository, artifactMetadataSource).getArtifacts());
 
       /*
       * Remove any Grails plugins that may be in the resolved artifact set.  This is because we
@@ -420,6 +424,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         if (file != null) {
           classpath.add(file.toURI().toURL());
         }
+      }
+      
+      for(URL url : classpath) {
+        System.out.println("classpath " + url.toString());
       }
 
       /*
@@ -449,7 +457,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   }
 
   private MavenProject getPluginProject() throws ProjectBuildingException {
-    final Artifact pluginArtifact = findArtifact(this.project.getPluginArtifacts(), "com.bluetrainsoftware.bluegrails.plugins", "grails-maven-plugin");
+    Artifact pluginArtifact = findArtifact(this.project.getPluginArtifacts(), "com.bluetrainsoftware.bluegrails", "grails-maven-plugin");
+    if (pluginArtifact == null)
+      pluginArtifact = findArtifact(this.project.getPluginArtifacts(), "org.grails", "grails-dependencies");
     return this.projectBuilder.buildFromRepository(pluginArtifact, this.remoteRepositories, this.localRepository);
   }
 
@@ -483,13 +493,18 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   @SuppressWarnings("unchecked")
   private Set<Artifact> resolveDependenciesToArtifacts(final Artifact artifact, final List<Dependency> dependencies) throws MojoExecutionException {
     try {
+
+      /*
       final MavenProject project = this.projectBuilder.buildFromRepository(artifact,
         this.remoteRepositories,
         this.localRepository);
+        */
 
       //make Artifacts of all the dependencies
       final Set<Artifact> artifacts = MavenMetadataSource.createArtifacts(this.artifactFactory, dependencies, null, null, null);
+      return artifactResolver.resolveTransitively(artifacts, artifact, remoteRepositories, localRepository, artifactMetadataSource).getArtifacts();
 
+      /*
       final ArtifactResolutionResult result = artifactCollector.collect(
         artifacts,
         project.getArtifact(),
@@ -512,6 +527,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       }
 
       return artifacts;
+      */
     } catch (final Exception ex) {
       throw new MojoExecutionException("Encountered problems resolving dependencies of the executable " +
         "in preparation for its execution.", ex);
@@ -630,7 +646,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
             java.nio.file.Files.createSymbolicLink()
           }
           */
-          FileUtils.deleteDirectory(pluginDir);
+//          FileUtils.deleteDirectory(pluginDir);
         }
       }
 
@@ -711,11 +727,13 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * @return The resulting Artifact.
    */
   private Artifact dependencyToArtifact(final Dependency dep) {
-    return this.artifactFactory.createBuildArtifact(
-      dep.getGroupId(),
-      dep.getArtifactId(),
-      dep.getVersion(),
-      "pom");
+//    return this.artifactFactory.createBuildArtifact(
+//      dep.getGroupId(),
+//      dep.getArtifactId(),
+//      dep.getVersion(),
+//      "pom");
+    return this.artifactFactory.createDependencyArtifact(dep.getGroupId(), dep.getArtifactId(), VersionRange.createFromVersion(dep.getVersion()),
+      dep.getType(), dep.getClassifier(), dep.getScope());
   }
 
   /**
