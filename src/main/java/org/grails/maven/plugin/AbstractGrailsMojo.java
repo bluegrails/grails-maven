@@ -25,20 +25,18 @@ import java.io.PrintStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import jline.Terminal;
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactCollector;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
-import org.apache.maven.artifact.resolver.ArtifactResolver;
+import org.apache.maven.artifact.resolver.*;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
@@ -176,6 +174,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private GrailsServices grailsServices;
 
   /**
+   * If this is passed, it will set the grails.server.factory property.
+   *
+   * @parameter
+   */
+  private String servletServerFactory;
+
+
+  /**
    * Returns the configured base directory for this execution of the plugin.
    *
    * @return The base directory.
@@ -224,6 +230,20 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
     InputStream currentIn = System.in;
     PrintStream currentOutput = System.out;
+    
+    // override the servlet factory if it is specified
+    if (this.servletServerFactory != null) {
+      System.setProperty("grails.server.factory", this.servletServerFactory);
+    }
+    
+    // see if we are using logback and not log4j
+    final String logbackFilename = this.getBasedir() + "/logback.xml";
+
+    if (new File(logbackFilename).exists()) {
+      getLog().info("Found logback configuration, setting logback.xml to " + logbackFilename);
+
+      System.setProperty("logback.configurationFile", logbackFilename);
+    }
 
     try {
       configureMavenProxy();
@@ -376,7 +396,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private URL[] generateGrailsExecutionClasspath() throws MojoExecutionException {
     try {
       final List<Dependency> unresolvedDependencies = new ArrayList<Dependency>();
-      final Set<Artifact> resolvedArtifacts = new HashSet<Artifact>();
 
       /*
       * Get the Grails dependencies from the plugin's POM file first.
@@ -388,24 +407,11 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       * of unresolved dependencies.  This is done so they can all be resolved at the same time so
       * that we get the benefit of Maven's conflict resolution.
       */
-      unresolvedDependencies.addAll(filterDependencies(pluginProject.getDependencies(), "org.grails"));
       unresolvedDependencies.addAll(this.project.getDependencies());
+      
+      unresolvedDependencies.addAll(filterForNonProvidedGrailsDependencies(pluginProject.getDependencies(), "org.grails"));
 
-      /*
-      * Convert the Maven dependencies into Maven artifacts so that they can be resolved.
-      */
-//      final List<Artifact> unresolvedArtifacts = dependenciesToArtifacts(unresolvedDependencies);
-
-      
-      Artifact mojoArtifact = this.artifactFactory.createBuildArtifact("com.bluetrainsoftware.bluegrails", "maven-project", "1", "pom");
-      
-      /*
-      * Resolve each artifact.  This will get all transitive artifacts AND eliminate conflicts.
-      */
-      Set<Artifact> unresolvedArtifacts = MavenMetadataSource.createArtifacts(this.artifactFactory, unresolvedDependencies, null, null, null);
-      
-      resolvedArtifacts.addAll(artifactResolver.resolveTransitively(unresolvedArtifacts, mojoArtifact,
-        remoteRepositories, localRepository, artifactMetadataSource).getArtifacts());
+      final Set<Artifact> resolvedArtifacts = getResolvedArtifactsFromUnresolvedDependencies(unresolvedDependencies);
 
       /*
       * Remove any Grails plugins that may be in the resolved artifact set.  This is because we
@@ -427,7 +433,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       }
       
       for(URL url : classpath) {
-        System.out.println("classpath " + url.toString());
+        getLog().debug("classpath " + url.toString());
       }
 
       /*
@@ -471,69 +477,38 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * @param groupId      The group ID of the requested dependencies.
    * @return The filtered list of dependencies.
    */
-  private List<Dependency> filterDependencies(final List<Dependency> dependencies, final String groupId) {
+  private List<Dependency> filterForNonProvidedGrailsDependencies(final List<Dependency> dependencies, final String groupId) {
     final List<Dependency> filteredDependencies = new ArrayList<Dependency>();
     for (final Dependency dependency : dependencies) {
-      if (dependency.getGroupId().equals(groupId)) {
+      if (dependency.getGroupId().equals(groupId) && !"provided".equals(dependency.getScope())) {
         filteredDependencies.add(dependency);
       }
     }
     return filteredDependencies;
   }
 
-  /**
-   * Resolves the given Maven artifact (by getting its transitive dependencies and eliminating conflicts) against
-   * the supplied list of dependencies.
-   *
-   * @param artifact     The artifact to be resolved.
-   * @param dependencies The list of dependencies for the "project" (to aid with conflict resolution).
-   * @return The resolved set of artifacts from the given artifact.  This includes the artifact itself AND its transitive artifacts.
-   * @throws MojoExecutionException if an error occurs while attempting to resolve the artifact.
-   */
-  @SuppressWarnings("unchecked")
-  private Set<Artifact> resolveDependenciesToArtifacts(final Artifact artifact, final List<Dependency> dependencies) throws MojoExecutionException {
+  
+  Set<Artifact> getResolvedArtifactsFromUnresolvedDependencies(List<Dependency> unresolvedDependencies) throws MojoExecutionException {
+    final Set<Artifact> resolvedArtifacts = new HashSet<Artifact>();
+    Artifact mojoArtifact = this.artifactFactory.createBuildArtifact("com.bluetrainsoftware.bluegrails", "maven-project", "1", "pom");
+
+    /*
+    * Resolve each artifact.  This will get all transitive artifacts AND eliminate conflicts.
+    */
+    final Set<Artifact> unresolvedArtifacts;
+
     try {
+      unresolvedArtifacts = MavenMetadataSource.createArtifacts(this.artifactFactory, unresolvedDependencies, null, null, null);
 
-      /*
-      final MavenProject project = this.projectBuilder.buildFromRepository(artifact,
-        this.remoteRepositories,
-        this.localRepository);
-        */
-
-      //make Artifacts of all the dependencies
-      final Set<Artifact> artifacts = MavenMetadataSource.createArtifacts(this.artifactFactory, dependencies, null, null, null);
-      return artifactResolver.resolveTransitively(artifacts, artifact, remoteRepositories, localRepository, artifactMetadataSource).getArtifacts();
-
-      /*
-      final ArtifactResolutionResult result = artifactCollector.collect(
-        artifacts,
-        project.getArtifact(),
-        this.localRepository,
-        this.remoteRepositories,
-        this.artifactMetadataSource,
-        null,
-        Collections.EMPTY_LIST);
-      artifacts.addAll(result.getArtifacts());
-
-      //not forgetting the Artifact of the project itself
-      artifacts.add(project.getArtifact());
-
-      //resolve all dependencies transitively to obtain a comprehensive list of assemblies
-      for (final Iterator<Artifact> iter = artifacts.iterator(); iter.hasNext(); ) {
-        final Artifact currentArtifact = iter.next();
-        if (!currentArtifact.getArtifactId().equals("tools") && !currentArtifact.getGroupId().equals("com.sun")) {
-          this.artifactResolver.resolve(currentArtifact, this.remoteRepositories, this.localRepository);
-        }
-      }
-
-      return artifacts;
-      */
-    } catch (final Exception ex) {
-      throw new MojoExecutionException("Encountered problems resolving dependencies of the executable " +
-        "in preparation for its execution.", ex);
+      resolvedArtifacts.addAll(artifactResolver.resolveTransitively(unresolvedArtifacts, mojoArtifact,
+        remoteRepositories, localRepository, artifactMetadataSource).getArtifacts());
+    } catch (Exception e) {
+      throw new MojoExecutionException("Unable to complete configuring the build settings", e);
     }
-  }
 
+    return resolvedArtifacts;
+  }
+  
   /**
    * Configures the launcher for execution.
    *
@@ -553,23 +528,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     launcher.setProjectPluginsDir(this.pluginsDir);
 
     final MavenProject pluginProject = getPluginProject();
-    final List<Dependency> unresolvedDependencies = new ArrayList<Dependency>();
-    final Set<Artifact> resolvedArtifacts = new HashSet<Artifact>();
 
-    unresolvedDependencies.addAll(filterDependencies(pluginProject.getDependencies(), "org.grails"));
+    List<File> files = artifactsToFiles(getResolvedArtifactsFromUnresolvedDependencies(filterForNonProvidedGrailsDependencies(pluginProject.getDependencies(), "org.grails")));
 
-    /*
-    * Convert the Maven dependencies into Maven artifacts so that they can be resolved.
-    */
-    final List<Artifact> unresolvedArtifacts = dependenciesToArtifacts(unresolvedDependencies);
-
-    /*
-    * Resolve each artifact.  This will get all transitive artifacts AND eliminate conflicts.
-    */
-    for (Artifact unresolvedArtifact : unresolvedArtifacts) {
-      resolvedArtifacts.addAll(resolveDependenciesToArtifacts(unresolvedArtifact, unresolvedDependencies));
-    }
-    List<File> files = artifactsToFiles(resolvedArtifacts);
     launcher.setBuildDependencies(files);
   }
 
@@ -646,7 +607,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
             java.nio.file.Files.createSymbolicLink()
           }
           */
-//          FileUtils.deleteDirectory(pluginDir);
+          FileUtils.deleteDirectory(pluginDir);
         }
       }
 

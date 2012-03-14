@@ -17,6 +17,7 @@
 package org.grails.maven.plugin;
 
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
+import org.codehaus.plexus.configuration.PlexusConfiguration;
 
 import java.io.File;
 
