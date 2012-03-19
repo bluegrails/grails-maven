@@ -532,8 +532,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     */
     final Set<Artifact> unresolvedArtifacts;
 
-    for (Dependency d : unresolvedDependencies)
-      System.out.println("dependency: " + d.toString());
+//    for (Dependency d : unresolvedDependencies)
+//      System.out.println("dependency: " + d.toString());
 
     try {
       unresolvedArtifacts = MavenMetadataSource.createArtifacts(this.artifactFactory, unresolvedDependencies, null, null, null);
@@ -544,9 +544,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       throw new MojoExecutionException("Unable to complete configuring the build settings", e);
     }
 
-    for (Artifact artifact : resolvedArtifacts) {
-      System.out.println("matched " + artifact.toString());
-    }
+//    for (Artifact artifact : resolvedArtifacts) {
+//      System.out.println("matched " + artifact.toString());
+//    }
 
     return resolvedArtifacts;
   }
@@ -608,9 +608,22 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     }
 
 
-    // The directory the plugin will be unzipped to.
+    String pluginLocationOverride = System.getProperty(plugin.getGroupId() + ":" + plugin.getArtifactId());
 
-    final File targetDir = new File(this.centralPluginInstallDir, pluginName + "-" + pluginVersion);
+    File targetDir = null;
+
+    if (pluginLocationOverride != null && pluginLocationOverride.length() > 0) {
+      targetDir = new File(pluginLocationOverride);
+      if (!targetDir.exists()) {
+        getLog().error(String.format("Specified directory (%s) for plugin %s:%s:%s could not be found", pluginLocationOverride, plugin.getGroupId(), plugin.getArtifactId(), plugin.getVersion()));
+        targetDir = null;
+      }
+    }
+
+    if (targetDir == null) {
+      // The directory the plugin will be unzipped to.
+      targetDir = new File(this.centralPluginInstallDir, pluginName + "-" + pluginVersion);
+    }
 
     // Unpack the plugin if it hasn't already been.
     if (!targetDir.exists()) {
@@ -738,7 +751,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         final Artifact dep = iter.next();
         if (dep.getType() != null && (dep.getType().equals("grails-plugin") || dep.getType().equals("zip"))) {
           pluginArtifacts.add(dep);
-          System.out.println("removing " + dep.toString());
+//          System.out.println("removing " + dep.toString());
           iter.remove();
         }
       }
