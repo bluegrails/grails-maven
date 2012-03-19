@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -173,6 +175,12 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    */
   private GrailsServices grailsServices;
 
+
+  /**
+   * @parameter expression="${user.home}/.grails/maven"
+   */
+  private File centralPluginInstallDir;
+
   /**
    * If this is passed, it will set the grails.server.factory property.
    *
@@ -230,12 +238,12 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
     InputStream currentIn = System.in;
     PrintStream currentOutput = System.out;
-    
+
     // override the servlet factory if it is specified
     if (this.servletServerFactory != null) {
       System.setProperty("grails.server.factory", this.servletServerFactory);
     }
-    
+
     // see if we are using logback and not log4j
     final String logbackFilename = this.getBasedir() + "/logback.xml";
 
@@ -248,7 +256,18 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     try {
       configureMavenProxy();
 
-      final URL[] classpath = generateGrailsExecutionClasspath();
+      // we only need to do this ONCE
+      final Set<Artifact> resolvedArtifacts = collectAllProjectArtifacts();
+
+      /*
+      * Remove any Grails plugins that may be in the resolved artifact set.  This is because we
+      * do not need them on the classpath, as they will be handled later on by a separate call to
+      * "install" them.
+      */
+      final Set<Artifact> pluginArtifacts = removePluginArtifacts(resolvedArtifacts);
+
+
+      final URL[] classpath = generateGrailsExecutionClasspath(resolvedArtifacts);
 
       final String grailsHomePath = (grailsHome != null) ? grailsHome.getAbsolutePath() : null;
       final RootLoader rootLoader = new RootLoader(classpath, ClassLoader.getSystemClassLoader());
@@ -266,19 +285,20 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
          * to the Grails script launcher. If using Maven, you should *never* see an Ivy message and if you do, immediately stop your build, figure
          * out the incorrect dependency, delete the ~/.ivy2 directory and try again.
          */
-        configureBuildSettings(launcher);
+        configureBuildSettings(launcher, resolvedArtifacts);
 
         // Search for all Grails plugin dependencies and install
         // any that haven't already been installed.
         final Metadata metadata = Metadata.getInstance(new File(getBasedir(), "application.properties"));
         boolean metadataModified = syncGrailsVersion(metadata);
 
-        for (@SuppressWarnings("unchecked")
-             final Iterator<Artifact> iter = this.project.getDependencyArtifacts().iterator(); iter.hasNext(); ) {
-          final Artifact artifact = iter.next();
-          if (artifact.getType() != null && (artifact.getType().equals("grails-plugin") || artifact.getType().equals("zip"))) {
-            metadataModified |= installGrailsPlugin(artifact, metadata, launcher);
-          }
+        Field settingsField = launcher.getClass().getDeclaredField("settings");
+        settingsField.setAccessible(true);
+
+        Class clazz = rootLoader.loadClass("grails.util.AbstractBuildSettings");
+
+        for (Artifact artifact : pluginArtifacts) {
+          metadataModified |= installGrailsPlugin(artifact, metadata, launcher, settingsField, clazz);
         }
 
         // always update application.properties - version control systems are clever enough to know when a file hasn't actually changed its content
@@ -286,6 +306,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         // when doing a release:prepare
 
         metadata.persist();
+
 
         // If the command is running in non-interactive mode, we
         // need to pass on the relevant argument.
@@ -384,6 +405,43 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     }
   }
 
+  /*
+  taken from the grails launcher as the plugins setup is broken
+   */
+  private Object invokeMethod(Object target, String name, Class<?>[] argTypes, Object[] args) {
+    try {
+      return target.getClass().getMethod(name, argTypes).invoke(target, args);
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+
+  private Set<Artifact> collectAllProjectArtifacts() throws MojoExecutionException {
+    final List<Dependency> unresolvedDependencies = new ArrayList<Dependency>();
+
+    /*
+    * Get the Grails dependencies from the plugin's POM file first.
+    */
+    final MavenProject pluginProject;
+    try {
+      pluginProject = getPluginProject();
+    } catch (ProjectBuildingException e) {
+      throw new MojoExecutionException("Unable to get plugin project", e);
+    }
+
+    /*
+    * Add the plugin's dependencies and the project using the plugin's dependencies to the list
+    * of unresolved dependencies.  This is done so they can all be resolved at the same time so
+    * that we get the benefit of Maven's conflict resolution.
+    */
+    unresolvedDependencies.addAll(this.project.getDependencies());
+
+    unresolvedDependencies.addAll(filterForNonProvidedGrailsDependencies(pluginProject.getDependencies(), "org.grails"));
+
+    return getResolvedArtifactsFromUnresolvedDependencies(unresolvedDependencies);
+  }
+
+
   /**
    * Generates the classpath to be used by the launcher to execute the requested Grails script.
    *
@@ -393,32 +451,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    *                                generate the classpath array.
    */
   @SuppressWarnings("unchecked")
-  private URL[] generateGrailsExecutionClasspath() throws MojoExecutionException {
+  private URL[] generateGrailsExecutionClasspath(Set<Artifact> resolvedArtifacts) throws MojoExecutionException {
     try {
-      final List<Dependency> unresolvedDependencies = new ArrayList<Dependency>();
 
-      /*
-      * Get the Grails dependencies from the plugin's POM file first.
-      */
-      final MavenProject pluginProject = getPluginProject();
-
-      /*
-      * Add the plugin's dependencies and the project using the plugin's dependencies to the list
-      * of unresolved dependencies.  This is done so they can all be resolved at the same time so
-      * that we get the benefit of Maven's conflict resolution.
-      */
-      unresolvedDependencies.addAll(this.project.getDependencies());
-      
-      unresolvedDependencies.addAll(filterForNonProvidedGrailsDependencies(pluginProject.getDependencies(), "org.grails"));
-
-      final Set<Artifact> resolvedArtifacts = getResolvedArtifactsFromUnresolvedDependencies(unresolvedDependencies);
-
-      /*
-      * Remove any Grails plugins that may be in the resolved artifact set.  This is because we
-      * do not need them on the classpath, as they will be handled later on by a separate call to
-      * "install" them.
-      */
-      removePluginArtifacts(resolvedArtifacts);
 
       /*
       * Convert each resolved artifact into a URL/classpath element.
@@ -431,8 +466,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
           classpath.add(file.toURI().toURL());
         }
       }
-      
-      for(URL url : classpath) {
+
+      for (URL url : classpath) {
         getLog().debug("classpath " + url.toString());
       }
 
@@ -487,7 +522,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     return filteredDependencies;
   }
 
-  
+
   Set<Artifact> getResolvedArtifactsFromUnresolvedDependencies(List<Dependency> unresolvedDependencies) throws MojoExecutionException {
     final Set<Artifact> resolvedArtifacts = new HashSet<Artifact>();
     Artifact mojoArtifact = this.artifactFactory.createBuildArtifact("com.bluetrainsoftware.bluegrails", "maven-project", "1", "pom");
@@ -496,6 +531,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     * Resolve each artifact.  This will get all transitive artifacts AND eliminate conflicts.
     */
     final Set<Artifact> unresolvedArtifacts;
+
+    for (Dependency d : unresolvedDependencies)
+      System.out.println("dependency: " + d.toString());
 
     try {
       unresolvedArtifacts = MavenMetadataSource.createArtifacts(this.artifactFactory, unresolvedDependencies, null, null, null);
@@ -506,16 +544,20 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       throw new MojoExecutionException("Unable to complete configuring the build settings", e);
     }
 
+    for (Artifact artifact : resolvedArtifacts) {
+      System.out.println("matched " + artifact.toString());
+    }
+
     return resolvedArtifacts;
   }
-  
+
   /**
    * Configures the launcher for execution.
    *
    * @param launcher The {@code GrailsLauncher} instance to be configured.
    */
   @SuppressWarnings("unchecked")
-  private void configureBuildSettings(final GrailsLauncher launcher) throws ProjectBuildingException, MojoExecutionException {
+  private Set<Artifact> configureBuildSettings(final GrailsLauncher launcher, Set<Artifact> resolvedArtifacts) throws ProjectBuildingException, MojoExecutionException {
     final String targetDir = this.project.getBuild().getDirectory();
     launcher.setDependenciesExternallyConfigured(true);
     launcher.setCompileDependencies(artifactsToFiles(this.project.getCompileArtifacts()));
@@ -527,11 +569,11 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     launcher.setResourcesDir(new File(targetDir, "resources"));
     launcher.setProjectPluginsDir(this.pluginsDir);
 
-    final MavenProject pluginProject = getPluginProject();
-
-    List<File> files = artifactsToFiles(getResolvedArtifactsFromUnresolvedDependencies(filterForNonProvidedGrailsDependencies(pluginProject.getDependencies(), "org.grails")));
+    List<File> files = artifactsToFiles(resolvedArtifacts);
 
     launcher.setBuildDependencies(files);
+
+    return resolvedArtifacts;
   }
 
   /**
@@ -555,40 +597,21 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private boolean installGrailsPlugin(
     final Artifact plugin,
     final Metadata metadata,
-    final GrailsLauncher launcher) throws IOException, ArchiverException {
+    final GrailsLauncher launcher,
+    Field settingsField,
+    Class clazz) throws IOException, ArchiverException {
     String pluginName = plugin.getArtifactId();
     final String pluginVersion = plugin.getVersion();
 
     if (pluginName.startsWith(PLUGIN_PREFIX)) {
       pluginName = pluginName.substring(PLUGIN_PREFIX.length());
     }
-    
 
-    getLog().info("Installing plugin " + pluginName + ":" + pluginVersion);
 
     // The directory the plugin will be unzipped to.
-    final File targetDir = new File(launcher.getProjectPluginsDir(), pluginName + "-" + pluginVersion);
 
-    String systemPluginAsLink = plugin.getGroupId() + ":" + pluginName;
-    
-    boolean isJdk7 = false;
+    final File targetDir = new File(this.centralPluginInstallDir, pluginName + "-" + pluginVersion);
 
-    /*
-    try {
-      Class.forName("java.nio.files.Files");
-      isJdk7 = true;
-
-      // if the target exists, is a symbolic link and the system flag isn't there, remove the symbolic link
-      if (targetDir.exists() && java.nio.file.Files.isSymbolicLink(targetDir.toPath()) && System.getProperty(systemPluginAsLink) == null) {
-        getLog().warn("Removing symbolic link to " + systemPluginAsLink + " as not specified as linkable.");
-        java.nio.file.Files.delete(targetDir.toPath());
-      }
-    } catch (Exception ex) {
-    }
-    */
-    
-    
-    
     // Unpack the plugin if it hasn't already been.
     if (!targetDir.exists()) {
       // Ideally we need to now do two things (a) see if we are running JDK7
@@ -598,19 +621,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       // know this has happened.
       // We wouldn't actually want this to be allowed when doing a release however.... So people should make sure they don't
       // specify them, they they'll be installed.
-
-      // check to determine if an older version of the plugin is already installed and if so, delete it
-      for( File pluginDir : launcher.getProjectPluginsDir().listFiles() ) {
-        if (pluginDir.getName().startsWith(pluginName + "-")) { // match, need to delete it
-          /*
-          if (isJdk7) {
-            java.nio.file.Files.createSymbolicLink()
-          }
-          */
-          FileUtils.deleteDirectory(pluginDir);
-        }
-      }
-
+      getLog().info(String.format("Installing Plugin %s:%s into (%s)", pluginName, pluginVersion, targetDir.getAbsolutePath()));
       targetDir.mkdirs();
 
       final ZipUnArchiver unzipper = new ZipUnArchiver();
@@ -619,14 +630,28 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       unzipper.setDestDirectory(targetDir);
       unzipper.setOverwrite(true);
       unzipper.extract();
+    } else {
+      getLog().info(String.format("Plugin %s:%s already installed (%s)", pluginName, pluginVersion, targetDir.getAbsolutePath()));
+    }
 
       // Now add it to the application metadata.
-      getLog().debug("Updating project metadata");
-      metadata.setProperty(String.format(GRAILS_PLUGIN_NAME_FORMAT, plugin.getGroupId(), pluginName), pluginVersion);
-      return true;
-    } else {
+//      getLog().debug("Updating project metadata");
+//      metadata.setProperty(String.format(GRAILS_PLUGIN_NAME_FORMAT, plugin.getGroupId(), pluginName), pluginVersion);
+//      metadata.setProperty("plugins." + pluginName, pluginVersion);
+
+
+      Object settings = null;
+      try {
+        settings = settingsField.get(launcher);
+
+        Method m = clazz.getDeclaredMethod("addPluginDirectory", new Class[]{File.class, boolean.class});
+        m.invoke(settings, targetDir, true);
+
+      } catch (Exception e) {
+        getLog().error("Unable to install plugin " + pluginName, e);
+      }
+
       return false;
-    }
   }
 
   /**
@@ -700,18 +725,25 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   /**
    * Removes any Grails plugin artifacts from the supplied list
    * of dependencies.  A Grails plugin is any artifact whose type
-   * is equal to "grails-plugin" or "zip".
+   * is equal to "grails-plugin" or "zip"
    *
    * @param artifact The list of artifacts to be cleansed.
+   * @return list of plugins
    */
-  private void removePluginArtifacts(final Set<Artifact> artifact) {
+  private Set<Artifact> removePluginArtifacts(final Set<Artifact> artifact) {
+    final Set<Artifact> pluginArtifacts = new HashSet<Artifact>();
+
     if (artifact != null) {
       for (final Iterator<Artifact> iter = artifact.iterator(); iter.hasNext(); ) {
         final Artifact dep = iter.next();
         if (dep.getType() != null && (dep.getType().equals("grails-plugin") || dep.getType().equals("zip"))) {
+          pluginArtifacts.add(dep);
+          System.out.println("removing " + dep.toString());
           iter.remove();
         }
       }
     }
+
+    return pluginArtifacts;
   }
 }

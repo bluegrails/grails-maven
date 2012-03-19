@@ -143,7 +143,6 @@
       <version>[1.3.2]</version>
     </dependency>
 
-
     <!-- Required by the "create-pom" goal because it contains the template
 POM for a Grails project. -->
     <dependency>
