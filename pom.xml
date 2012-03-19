@@ -11,7 +11,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.bluetrainsoftware.bluegrails</groupId>
   <artifactId>grails-maven-plugin</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.2-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <name>Maven plugin for GRAILS applications</name>
@@ -81,6 +81,14 @@
   </prerequisites>
 
   <dependencies>
+    <!--
+    Notes:
+    * we removed Groovy when we see it as the plugin should not transitively be dictating the version of groovy, that should
+      be explicit by the client (as it is too important).
+    * we mark the grails dependencies that would normally be used to build as "provided" as we expect these to be provided by the
+      pom that is using this plugin (as they are included artifacts and thus should again be explicit).
+    * ideally the other grails dependencies should be able to be defined externally, but that is not critical at this stage.
+    -->
     <dependency>
       <groupId>jline</groupId>
       <artifactId>jline</artifactId>
@@ -92,12 +100,14 @@
       <artifactId>grails-bootstrap</artifactId>
       <version>${grails-bootstrap.version}</version>
       <exclusions>
-
+        <exclusion>
+          <groupId>org.codehaus.groovy</groupId>
+          <artifactId>groovy-all</artifactId>
+        </exclusion>
         <exclusion>
           <groupId>org.grails</groupId>
           <artifactId>grails-plugin-log4j</artifactId>
         </exclusion>
-
       </exclusions>
     </dependency>
 
@@ -119,24 +129,12 @@
       <version>${grails.version}</version>
       <type>pom</type>
       <scope>provided</scope>
-      <!--
       <exclusions>
         <exclusion>
-          <groupId>org.grails</groupId>
-          <artifactId>grails-plugin-log4j</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>log4j</groupId>
-          <artifactId>log4j</artifactId>
+          <groupId>org.codehaus.groovy</groupId>
+          <artifactId>groovy-all</artifactId>
         </exclusion>
       </exclusions>
-      -->
-    </dependency>
-
-    <dependency>
-      <groupId>nz.ac.auckland.composite</groupId>
-      <artifactId>composite-grails-logging-deploy</artifactId>
-      <version>[2,3)</version>
     </dependency>
 
     <dependency>
@@ -166,6 +164,10 @@ POM for a Grails project. -->
       <version>${grails-maven-archetype.version}</version>
       <scope>runtime</scope>
       <exclusions>
+          <exclusion>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+          </exclusion>
         <exclusion>
           <groupId>org.grails</groupId>
           <artifactId>grails-plugin-log4j</artifactId>
