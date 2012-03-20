@@ -25,12 +25,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import jline.Terminal;
 import org.apache.commons.io.FileUtils;
@@ -285,20 +280,19 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
          * to the Grails script launcher. If using Maven, you should *never* see an Ivy message and if you do, immediately stop your build, figure
          * out the incorrect dependency, delete the ~/.ivy2 directory and try again.
          */
-        configureBuildSettings(launcher, resolvedArtifacts);
+        Field settingsField = launcher.getClass().getDeclaredField("settings");
+        settingsField.setAccessible(true);
+
+        configureBuildSettings(launcher, resolvedArtifacts, settingsField, rootLoader.loadClass("grails.util.BuildSettings"));
 
         // Search for all Grails plugin dependencies and install
         // any that haven't already been installed.
         final Metadata metadata = Metadata.getInstance(new File(getBasedir(), "application.properties"));
         boolean metadataModified = syncGrailsVersion(metadata);
 
-        Field settingsField = launcher.getClass().getDeclaredField("settings");
-        settingsField.setAccessible(true);
-
-        Class clazz = rootLoader.loadClass("grails.util.AbstractBuildSettings");
 
         for (Artifact artifact : pluginArtifacts) {
-          metadataModified |= installGrailsPlugin(artifact, metadata, launcher, settingsField, clazz);
+          metadataModified |= installGrailsPlugin(artifact, metadata, launcher, settingsField, rootLoader.loadClass("grails.util.AbstractBuildSettings"));
         }
 
         // always update application.properties - version control systems are clever enough to know when a file hasn't actually changed its content
@@ -557,7 +551,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * @param launcher The {@code GrailsLauncher} instance to be configured.
    */
   @SuppressWarnings("unchecked")
-  private Set<Artifact> configureBuildSettings(final GrailsLauncher launcher, Set<Artifact> resolvedArtifacts) throws ProjectBuildingException, MojoExecutionException {
+  private Set<Artifact> configureBuildSettings(final GrailsLauncher launcher, Set<Artifact> resolvedArtifacts, Field settingsField, Class clazz) throws ProjectBuildingException, MojoExecutionException {
     final String targetDir = this.project.getBuild().getDirectory();
     launcher.setDependenciesExternallyConfigured(true);
     launcher.setCompileDependencies(artifactsToFiles(this.project.getCompileArtifacts()));
@@ -572,6 +566,24 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     List<File> files = artifactsToFiles(resolvedArtifacts);
 
     launcher.setBuildDependencies(files);
+
+    Object settings = null;
+    try {
+      settings = settingsField.get(launcher);
+
+      Field f = settings.getClass().getDeclaredField("defaultPluginSet");
+      f.setAccessible(true);
+      f.set(settings, new HashSet());
+      f = settings.getClass().getDeclaredField("defaultPluginMap");
+      f.setAccessible(true);
+      f.set(settings, new LinkedHashMap());
+      f = settings.getClass().getDeclaredField("enableResolve");
+      f.setAccessible(true);
+      f.set(settings, false);
+
+    } catch (Exception e) {
+      getLog().error("Unable to set default plugin set to empty ", e);
+    }
 
     return resolvedArtifacts;
   }
