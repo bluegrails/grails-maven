@@ -27,6 +27,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.*;
 
+import groovy.lang.GString;
 import jline.Terminal;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
@@ -312,6 +313,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         args = (args != null) ? "--plain-output " + args : "--plain-output";
 
         final int retval = launcher.launch(targetName, args, env);
+
+        if ("true".equals(System.getProperty("print.grails.settings")))
+          printIntellijIDEASettings(launcher, settingsField, pluginArtifacts);
+
         if (retval != 0) {
           throw new MojoExecutionException("Grails returned non-zero value: " + retval);
         }
@@ -327,6 +332,48 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       Terminal.resetTerminal();
       System.setIn(currentIn);
       System.setOut(currentOutput);
+    }
+  }
+
+
+  public static final String SETTINGS_START_MARKER = "---=== IDEA Grails build settings ===---";
+  public static final String SETTINGS_END_MARKER = "---=== End IDEA Grails build settings ===---";
+
+  private static Set GRAILS_PROPERTY_LIST = new HashSet(Arrays.asList(new String[]{"grails.work.dir", "grails.project.work.dir",
+    "grails.project.target.dir", "grails.project.war.file", "grails.project.war.exploded.dir", "grails.project.class.dir",
+    "grails.project.test.class.dir", "grails.project.resource.dir", "grails.project.source.dir", "grails.project.web.xml",
+    "grails.project.plugins.dir", "grails.global.plugins.dir", "grails.project.test.reports.dir", "grails.project.test.source.dir"}));
+
+  private void printIntellijIDEASettings(GrailsLauncher launcher, Field settingsField, Set<Artifact> pluginArtifacts) {
+    try {
+      Object settings = settingsField.get(launcher);
+      Field configField = settings.getClass().getSuperclass().getDeclaredField("config");
+      configField.setAccessible(true);
+      Object config = configField.get(settings);
+      Map flatten = (Map) config.getClass().getDeclaredMethod("flatten").invoke(config);
+
+      System.out.println();
+      System.out.println(SETTINGS_START_MARKER);
+
+      for (Object key : flatten.keySet()) {
+        Object value = flatten.get(key);
+        if (value instanceof String || value instanceof GString) {
+          String realKey = key.toString();
+          if (GRAILS_PROPERTY_LIST.contains(realKey)) {
+            System.out.println(realKey + "=" + value.toString());
+          }
+        }
+      }
+      
+      for(Artifact plugin: pluginArtifacts) {
+        File targetDir = getPluginTargetDir(plugin);
+        System.out.println("grails.plugin.location." + getPluginName(plugin) + "=" + targetDir.getAbsolutePath());
+      }
+
+      System.out.println();
+      System.out.println(SETTINGS_END_MARKER);
+    } catch (Exception ex) {
+      getLog().error("Unable to get flattened configuration data", ex);
     }
   }
 
@@ -587,6 +634,39 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     return resolvedArtifacts;
   }
 
+  
+  private String getPluginName(Artifact plugin) {
+    String pluginName = plugin.getArtifactId();
+    
+    if (pluginName.startsWith(PLUGIN_PREFIX)) {
+      return pluginName.substring(PLUGIN_PREFIX.length());
+    } else {
+      return pluginName;
+    }
+  }
+  
+  private File getPluginTargetDir(Artifact plugin) {
+    String pluginLocationOverride = System.getProperty(plugin.getGroupId() + ":" + plugin.getArtifactId());
+
+    File targetDir = null;
+
+    if (pluginLocationOverride != null && pluginLocationOverride.length() > 0) {
+      targetDir = new File(pluginLocationOverride);
+      if (!targetDir.exists()) {
+        getLog().error(String.format("Specified directory (%s) for plugin %s:%s:%s could not be found", pluginLocationOverride, plugin.getGroupId(), plugin.getArtifactId(), plugin.getVersion()));
+        targetDir = null;
+      }
+    }
+
+    if (targetDir == null) {
+      // The directory the plugin will be unzipped to.
+      targetDir = new File(this.centralPluginInstallDir, getPluginName(plugin) + "-" + plugin.getVersion());
+    }
+
+    return targetDir;
+  }
+
+  
   /**
    * Installs a Grails plugin into the current project if it isn't
    * already installed. It works by simply unpacking the plugin
@@ -611,30 +691,12 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     final GrailsLauncher launcher,
     Field settingsField,
     Class clazz) throws IOException, ArchiverException {
-    String pluginName = plugin.getArtifactId();
+    
+    
+    File targetDir = getPluginTargetDir(plugin);
+    
+    String pluginName = getPluginName(plugin);
     final String pluginVersion = plugin.getVersion();
-
-    if (pluginName.startsWith(PLUGIN_PREFIX)) {
-      pluginName = pluginName.substring(PLUGIN_PREFIX.length());
-    }
-
-
-    String pluginLocationOverride = System.getProperty(plugin.getGroupId() + ":" + plugin.getArtifactId());
-
-    File targetDir = null;
-
-    if (pluginLocationOverride != null && pluginLocationOverride.length() > 0) {
-      targetDir = new File(pluginLocationOverride);
-      if (!targetDir.exists()) {
-        getLog().error(String.format("Specified directory (%s) for plugin %s:%s:%s could not be found", pluginLocationOverride, plugin.getGroupId(), plugin.getArtifactId(), plugin.getVersion()));
-        targetDir = null;
-      }
-    }
-
-    if (targetDir == null) {
-      // The directory the plugin will be unzipped to.
-      targetDir = new File(this.centralPluginInstallDir, pluginName + "-" + pluginVersion);
-    }
 
     // Unpack the plugin if it hasn't already been.
     if (!targetDir.exists()) {
@@ -658,24 +720,24 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       getLog().info(String.format("Plugin %s:%s already installed (%s)", pluginName, pluginVersion, targetDir.getAbsolutePath()));
     }
 
-      // Now add it to the application metadata.
+    // Now add it to the application metadata.
 //      getLog().debug("Updating project metadata");
 //      metadata.setProperty(String.format(GRAILS_PLUGIN_NAME_FORMAT, plugin.getGroupId(), pluginName), pluginVersion);
 //      metadata.setProperty("plugins." + pluginName, pluginVersion);
 
 
-      Object settings = null;
-      try {
-        settings = settingsField.get(launcher);
+    Object settings = null;
+    try {
+      settings = settingsField.get(launcher);
 
-        Method m = clazz.getDeclaredMethod("addPluginDirectory", new Class[]{File.class, boolean.class});
-        m.invoke(settings, targetDir, true);
+      Method m = clazz.getDeclaredMethod("addPluginDirectory", new Class[]{File.class, boolean.class});
+      m.invoke(settings, targetDir, true);
 
-      } catch (Exception e) {
-        getLog().error("Unable to install plugin " + pluginName, e);
-      }
+    } catch (Exception e) {
+      getLog().error("Unable to install plugin " + pluginName, e);
+    }
 
-      return false;
+    return false;
   }
 
   /**
