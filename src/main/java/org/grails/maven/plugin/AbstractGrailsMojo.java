@@ -28,7 +28,6 @@ import java.net.URL;
 import java.util.*;
 
 import jline.Terminal;
-import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
@@ -430,7 +429,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     */
     unresolvedDependencies.addAll(this.project.getDependencies());
 
-    unresolvedDependencies.addAll(filterForNonProvidedGrailsDependencies(pluginProject.getDependencies(), "org.grails"));
+    unresolvedDependencies.addAll(filterForGrailsDependencies(pluginProject.getDependencies(), "org.grails"));
 
     return getResolvedArtifactsFromUnresolvedDependencies(unresolvedDependencies);
   }
@@ -506,10 +505,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * @param groupId      The group ID of the requested dependencies.
    * @return The filtered list of dependencies.
    */
-  private List<Dependency> filterForNonProvidedGrailsDependencies(final List<Dependency> dependencies, final String groupId) {
+  private List<Dependency> filterForGrailsDependencies(final List<Dependency> dependencies, final String groupId) {
     final List<Dependency> filteredDependencies = new ArrayList<Dependency>();
     for (final Dependency dependency : dependencies) {
-      if (dependency.getGroupId().equals(groupId) && !"provided".equals(dependency.getScope())) {
+      if (dependency.getGroupId().equals(groupId) && !"grails-dependencies".equals(dependency.getArtifactId())) {
         filteredDependencies.add(dependency);
       }
     }

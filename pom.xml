@@ -128,15 +128,6 @@
       <artifactId>grails-dependencies</artifactId>
       <version>${grails.version}</version>
       <type>pom</type>
-      <scope>provided</scope>
-      <!--
-      <exclusions>
-        <exclusion>
-          <groupId>org.codehaus.groovy</groupId>
-          <artifactId>groovy-all</artifactId>
-        </exclusion>
-      </exclusions>
-      -->
     </dependency>
 
     <dependency>
