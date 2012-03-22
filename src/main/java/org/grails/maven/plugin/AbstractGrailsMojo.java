@@ -66,6 +66,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
   private static final String GRAILS_PLUGIN_NAME_FORMAT = "plugins.%s:%s";
   public static final String APP_GRAILS_VERSION = "app.grails.version";
+  public static final String APP_VERSION = "app.version";
 
   /**
    * The directory where is launched the mvn command.
@@ -209,6 +210,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     return grailsServices;
   }
 
+  protected void syncAppVersion() {
+    final Metadata metadata = Metadata.getInstance(new File(getBasedir(), "application.properties"));
+    
+    syncVersion(metadata);
+    
+    metadata.persist();
+  }
+  
   /**
    * Executes the requested Grails target.  The "targetName" must match a known
    * Grails script provided by grails-scripts.
@@ -290,11 +299,11 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         // Search for all Grails plugin dependencies and install
         // any that haven't already been installed.
         final Metadata metadata = Metadata.getInstance(new File(getBasedir(), "application.properties"));
-        boolean metadataModified = syncGrailsVersion(metadata);
-
+        syncGrailsVersion(metadata);
+        syncVersion(metadata);
 
         for (Artifact artifact : pluginArtifacts) {
-          metadataModified |= installGrailsPlugin(artifact, metadata, launcher, settingsField, rootLoader.loadClass("grails.util.AbstractBuildSettings"));
+          installGrailsPlugin(artifact, metadata, launcher, settingsField, rootLoader.loadClass("grails.util.AbstractBuildSettings"));
         }
 
         // always update application.properties - version control systems are clever enough to know when a file hasn't actually changed its content
@@ -378,6 +387,11 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       getLog().error("Unable to get flattened configuration data", ex);
     }
   }
+
+  private void syncVersion(Metadata metadata) {
+    metadata.put(APP_VERSION, project.getVersion());
+  }
+
 
   private boolean syncGrailsVersion(Metadata metadata) {
     Object grailsVersion = metadata.get(APP_GRAILS_VERSION);

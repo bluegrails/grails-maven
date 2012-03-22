@@ -53,6 +53,7 @@ public class MvnValidateMojo extends AbstractGrailsMojo {
   public void execute() throws MojoExecutionException, MojoFailureException {
     GrailsProject grailsProject;
 
+    syncAppVersion();
 
     try {
       grailsProject = getGrailsServices().readProjectDescriptor();
@@ -65,23 +66,5 @@ public class MvnValidateMojo extends AbstractGrailsMojo {
       throw new MojoFailureException("app.name [" + grailsProject.getAppName() + "] in " +
         "application.properties is different of the artifactId [" + artifactId + "] in the pom.xml");
     }
-
-    // We have to set the application version in grails settings for old versions
-    if (grailsProject.getAppVersion() == null) {
-      grailsProject.setAppVersion(GrailsProject.DEFAULT_APP_VERSION);
-      getLog().warn("application.properties didn't contain an app.version property");
-      getLog().warn("Setting to default value '" + grailsProject.getAppVersion() + "'.");
-
-      getGrailsServices().writeProjectDescriptor(getBasedir(), grailsProject);
-    }
-
-    final String pomVersion = version.trim();
-    final String grailsVersion = grailsProject.getAppVersion().trim();
-
-    if (!grailsVersion.equals(pomVersion)) {
-      throw new MojoFailureException("app.version [" + grailsVersion + "] in " +
-        "application.properties is different of the version [" + pomVersion + "] in the pom.xml");
-    }
-
   }
 }

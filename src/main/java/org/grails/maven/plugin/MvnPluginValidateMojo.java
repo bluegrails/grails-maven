@@ -32,68 +32,62 @@ import org.grails.maven.plugin.tools.GrailsPluginProject;
  */
 public class MvnPluginValidateMojo extends AbstractGrailsMojo {
 
-    /**
-     * The artifact id of the project.
-     *
-     * @parameter expression="${project.artifactId}"
-     * @required
-     * @readonly
-     */
-    private String artifactId;
+  /**
+   * The artifact id of the project.
+   *
+   * @parameter expression="${project.artifactId}"
+   * @required
+   * @readonly
+   */
+  private String artifactId;
 
-    /**
-     * The version id of the project.
-     *
-     * @parameter expression="${project.version}"
-     * @required
-     * @readonly
-     */
-    private String version;
+  /**
+   * The version id of the project.
+   *
+   * @parameter expression="${project.version}"
+   * @required
+   * @readonly
+   */
+  private String version;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        // Make sure that the artifactId starts with "grails-".
-        //
-        // As of Grails 1.3, plugins can be deployed to Maven repositories
-        // without a 'grails-' prefix, so it doesn't make sense to keep this
-        // limitation in this Maven plugin.
-        /*
-        if (!artifactId.startsWith(PLUGIN_PREFIX)) {
-            throw new MojoFailureException("Grails plugin artifact IDs must start with '" + PLUGIN_PREFIX +
-                "' to avoid confusion when the artifact is installed in the Maven repository.");
-        }
-        */
-
-        try {
-            getGrailsServices().readProjectDescriptor();
-        } catch (final MojoExecutionException e) {
-            getLog().info("No Grails project found - skipping validation.");
-            return;
-        }
-
-        final GrailsPluginProject grailsProject = getGrailsServices().readGrailsPluginProject();
-        final String pluginName = grailsProject.getPluginName();
-
-        /*
-        if (artifactId.equals(pluginName)) {
-            throw new MojoFailureException("The artifact id in pom.xml has to be the same as in " +
-                grailsProject.getFileName() + " prefixed with '" + PLUGIN_PREFIX + "'. This is to avoid confusion when " +
-                "the artifact is installed in the Maven repository.");
-        }
-        */
-
-        if (!artifactId.equals(pluginName) && !artifactId.equals(PLUGIN_PREFIX + pluginName)) {
-            throw new MojoFailureException("The plugin name in the pom.xml [" + artifactId + "]" +
-                " is not the expected '" + pluginName + "' or '" + PLUGIN_PREFIX + pluginName + "'. " +
-                "Please correct the pom.xml or the plugin " +
-                "descriptor.");
-        }
-
-        final String pomVersion = version.trim();
-        final String grailsVersion = grailsProject.getVersion();
-
-        if (!grailsVersion.equals(pomVersion)) {
-            throw new MojoFailureException("The version specified in the plugin descriptor " +
-                "[" + grailsVersion + "] is different from the version in the pom.xml [" + pomVersion + "] ");
-        }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    // Make sure that the artifactId starts with "grails-".
+    //
+    // As of Grails 1.3, plugins can be deployed to Maven repositories
+    // without a 'grails-' prefix, so it doesn't make sense to keep this
+    // limitation in this Maven plugin.
+    /*
+    if (!artifactId.startsWith(PLUGIN_PREFIX)) {
+        throw new MojoFailureException("Grails plugin artifact IDs must start with '" + PLUGIN_PREFIX +
+            "' to avoid confusion when the artifact is installed in the Maven repository.");
     }
+    */
+
+    syncAppVersion();
+
+    try {
+      getGrailsServices().readProjectDescriptor();
+    } catch (final MojoExecutionException e) {
+      getLog().info("No Grails project found - skipping validation.");
+      return;
+    }
+
+    final GrailsPluginProject grailsProject = getGrailsServices().readGrailsPluginProject();
+    final String pluginName = grailsProject.getPluginName();
+
+    /*
+    if (artifactId.equals(pluginName)) {
+        throw new MojoFailureException("The artifact id in pom.xml has to be the same as in " +
+            grailsProject.getFileName() + " prefixed with '" + PLUGIN_PREFIX + "'. This is to avoid confusion when " +
+            "the artifact is installed in the Maven repository.");
+    }
+    */
+
+    if (!artifactId.equals(pluginName) && !artifactId.equals(PLUGIN_PREFIX + pluginName)) {
+      throw new MojoFailureException("The plugin name in the pom.xml [" + artifactId + "]" +
+        " is not the expected '" + pluginName + "' or '" + PLUGIN_PREFIX + pluginName + "'. " +
+        "Please correct the pom.xml or the plugin " +
+        "descriptor.");
+    }
+  }
 }
