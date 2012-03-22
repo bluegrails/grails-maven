@@ -217,6 +217,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     
     metadata.persist();
   }
+
+  // we are getting a situation where the same goal is running twice - two compiles, two test apps. This is a hack fix until the real cause is discovered.
+  private static String lastTargetName;
+  private static String lastArgs;
   
   /**
    * Executes the requested Grails target.  The "targetName" must match a known
@@ -238,6 +242,12 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * @throws MojoExecutionException if an error occurs while attempting to execute the target.
    */
   protected void runGrails(final String targetName, String args) throws MojoExecutionException {
+
+    if (lastArgs != null && lastArgs.equals(args) && lastTargetName != null && lastTargetName.equals(targetName))
+      return;
+
+    lastArgs = args;
+    lastTargetName = targetName;
 
     getLog().info("Grails target: " + targetName + " raw args:" + args);
 
