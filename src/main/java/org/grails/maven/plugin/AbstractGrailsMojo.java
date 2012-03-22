@@ -230,6 +230,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    */
   protected void runGrails(final String targetName, String args) throws MojoExecutionException {
 
+    getLog().info("Grails target: " + targetName + " raw args:" + args);
 
     InputStream currentIn = System.in;
     PrintStream currentOutput = System.out;
@@ -266,7 +267,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
       final String grailsHomePath = (grailsHome != null) ? grailsHome.getAbsolutePath() : null;
       final RootLoader rootLoader = new RootLoader(classpath, ClassLoader.getSystemClassLoader());
-      System.setProperty("grails.console.enable.terminal", "false");
+
+      System.setProperty("grails.console.enable.terminal", "true");
       System.setProperty("grails.console.enable.interactive", "false");
 
       try {
@@ -506,7 +508,18 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
           classpath.add(file.toURI().toURL());
         }
       }
-
+      
+      // check to see if someone is adding build listeners on the classpath, and if so, bring in the system classpath and add it to our urls
+      // IDEA for example does this
+      if (System.getProperty("grails.build.listeners") != null) {
+        String cp = System.getProperty("java.class.path");
+        for( String c : cp.split(":") ) {
+          File f = new File(c);
+          if (f.exists())
+            classpath.add(f.toURI().toURL());
+        }
+      }
+      
       for (URL url : classpath) {
         getLog().debug("classpath " + url.toString());
       }
