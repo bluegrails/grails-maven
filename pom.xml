@@ -11,7 +11,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.bluetrainsoftware.bluegrails</groupId>
   <artifactId>grails-maven-plugin</artifactId>
-  <version>1.4-SNAPSHOT</version>
+  <version>1.4</version>
   <packaging>maven-plugin</packaging>
 
   <name>Maven plugin for GRAILS applications</name>
@@ -107,6 +107,10 @@
         <exclusion>
           <groupId>org.grails</groupId>
           <artifactId>grails-plugin-log4j</artifactId>
+        </exclusion>
+        <exclusion> <!-- this one is excluded because it isn't in Apache Maven Central -->
+          <groupId>org.springframework.uaa</groupId>
+          <artifactId>org.springframework.uaa.client</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
