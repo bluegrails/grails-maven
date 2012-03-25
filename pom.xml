@@ -11,7 +11,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.bluetrainsoftware.bluegrails</groupId>
   <artifactId>grails-maven-plugin</artifactId>
-  <version>1.4</version>
+  <version>1.5</version>
   <packaging>maven-plugin</packaging>
 
   <name>Maven plugin for GRAILS applications</name>
@@ -25,15 +25,20 @@
     </license>
   </licenses>
   <scm>
-    <url>http://github.com/grails/grails-maven-plugin</url>
-    <developerConnection>scm:git:git://github.com/grails/grails-maven-plugin.git</developerConnection>
-    <connection>scm:git:git@github.com:grails/grails-maven-plugin.git</connection>
+    <url>http://github.com/bluegrails/grails-maven</url>
+    <developerConnection>scm:git:git://github.com/bluegrails/grails-maven-plugin.git</developerConnection>
+    <connection>scm:git:git@github.com:bluegrails/grails-maven.git</connection>
   </scm>
   <developers>
     <developer>
       <id>graemerocher</id>
       <name>Graeme Rocher</name>
       <email>graeme.rocher@gmail.com</email>
+    </developer>
+    <developer>
+      <id>rvowles</id>
+      <name>Richard Vowles</name>
+      <email>richard@bluetrainsoftware.com</email>
     </developer>
   </developers>
 
