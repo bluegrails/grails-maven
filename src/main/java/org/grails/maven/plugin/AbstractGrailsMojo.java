@@ -592,7 +592,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private List<Dependency> filterForGrailsDependencies(final List<Dependency> dependencies, final String groupId) {
     final List<Dependency> filteredDependencies = new ArrayList<Dependency>();
     for (final Dependency dependency : dependencies) {
-      if (dependency.getGroupId().equals(groupId) && !"grails-dependencies".equals(dependency.getArtifactId())) {
+      if (dependency.getGroupId().equals(groupId) && !"grails-dependencies".equals(dependency.getArtifactId()) ) {
         filteredDependencies.add(dependency);
       }
     }
