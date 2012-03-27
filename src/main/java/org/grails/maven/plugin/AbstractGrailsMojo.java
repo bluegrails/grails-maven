@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
@@ -212,16 +213,16 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
   protected void syncAppVersion() {
     final Metadata metadata = Metadata.getInstance(new File(getBasedir(), "application.properties"));
-    
+
     syncVersion(metadata);
-    
+
     metadata.persist();
   }
 
   // we are getting a situation where the same goal is running twice - two compiles, two test apps. This is a hack fix until the real cause is discovered.
   private static String lastTargetName;
   private static String lastArgs;
-  
+
   /**
    * Executes the requested Grails target.  The "targetName" must match a known
    * Grails script provided by grails-scripts.
@@ -233,6 +234,24 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     runGrails(targetName, null);
   }
 
+
+  private static ClassLoader jlineClassloaderParent;
+
+  protected void initializeJline() throws MojoExecutionException {
+    try {
+      if (jlineClassloaderParent == null) {
+
+        List<URL> classpath = generateExecutionClasspath(
+          getResolvedArtifactsFromUnresolvedDependencies(
+            filterDependencies(getPluginProject().getDependencies(), Arrays.asList("jline")), "com.bluetrainsoftware.bluegrails", "jline-parent"));
+
+        jlineClassloaderParent = new RootLoader(classpath.toArray(new URL[classpath.size()]), ClassLoader.getSystemClassLoader());
+      }
+    } catch (ProjectBuildingException pbe) {
+      throw new MojoExecutionException("Unable to load plugin project", pbe);
+    }
+  }
+
   /**
    * Executes the requested Grails target.  The "targetName" must match a known
    * Grails script provided by grails-scripts.
@@ -242,7 +261,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * @throws MojoExecutionException if an error occurs while attempting to execute the target.
    */
   protected void runGrails(final String targetName, String args) throws MojoExecutionException {
-
     if (lastArgs != null && lastArgs.equals(args) && lastTargetName != null && lastTargetName.equals(targetName))
       return;
 
@@ -250,6 +268,11 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     lastTargetName = targetName;
 
     getLog().info("Grails target: " + targetName + " raw args:" + args);
+
+    // hold onto it as it holds the jLine.Terminal class we need to reset the terminal back to normal. We have to do it this
+    // way as on Windows it fails as we hold a ref and the Grails class loader holds a ref, JLine tries to duplicate load the
+    // Windows DLL.
+    initializeJline();
 
     InputStream currentIn = System.in;
     PrintStream currentOutput = System.out;
@@ -268,6 +291,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       System.setProperty("logback.configurationFile", logbackFilename);
     }
 
+
     try {
       configureMavenProxy();
 
@@ -281,13 +305,12 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       */
       final Set<Artifact> pluginArtifacts = removePluginArtifacts(resolvedArtifacts);
 
-
       final URL[] classpath = generateGrailsExecutionClasspath(resolvedArtifacts);
 
       final String grailsHomePath = (grailsHome != null) ? grailsHome.getAbsolutePath() : null;
-      final RootLoader rootLoader = new RootLoader(classpath, ClassLoader.getSystemClassLoader());
+      RootLoader rootLoader = new RootLoader(classpath, jlineClassloaderParent);
 
-      System.setProperty("grails.console.enable.terminal", "true");
+      System.setProperty("grails.console.enable.terminal", "false");
       System.setProperty("grails.console.enable.interactive", "false");
 
       try {
@@ -350,10 +373,18 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         throw new MojoExecutionException("Unable to start Grails", ex);
       }
     } finally {
-      Terminal.resetTerminal();
+      if (jlineClassloaderParent != null) {
+        try {
+          Class cls = jlineClassloaderParent.loadClass("jline.Terminal");
+          invokeStaticMethod(cls, "resetTerminal", new Object[]{});
+        } catch (Exception ex) {
+        }
+      }
       System.setIn(currentIn);
       System.setOut(currentOutput);
     }
+
+    System.gc(); // try and help with memory issues
   }
 
 
@@ -385,8 +416,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
           }
         }
       }
-      
-      for(Artifact plugin: pluginArtifacts) {
+
+      for (Artifact plugin : pluginArtifacts) {
         File targetDir = getPluginTargetDir(plugin);
         System.out.println("grails.plugin.location." + getPluginName(plugin) + "=" + targetDir.getAbsolutePath());
       }
@@ -502,11 +533,32 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     */
     unresolvedDependencies.addAll(this.project.getDependencies());
 
-    unresolvedDependencies.addAll(filterForGrailsDependencies(pluginProject.getDependencies(), "org.grails"));
+    unresolvedDependencies.addAll(filterDependencies(pluginProject.getDependencies(), Arrays.asList("org.grails")));
 
     return getResolvedArtifactsFromUnresolvedDependencies(unresolvedDependencies);
   }
 
+
+  private List<URL> generateExecutionClasspath(Set<Artifact> resolvedArtifacts) throws MojoExecutionException {
+    /*
+    * Convert each resolved artifact into a URL/classpath element.
+    */
+    final List<URL> classpath = new ArrayList<URL>();
+
+    try {
+
+      for (Artifact resolvedArtifact : resolvedArtifacts) {
+        final File file = resolvedArtifact.getFile();
+        if (file != null) {
+          classpath.add(file.toURI().toURL());
+        }
+      }
+    } catch (MalformedURLException murle) {
+      throw new MojoExecutionException("Unable to find files", murle);
+    }
+
+    return classpath;
+  }
 
   /**
    * Generates the classpath to be used by the launcher to execute the requested Grails script.
@@ -520,30 +572,19 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private URL[] generateGrailsExecutionClasspath(Set<Artifact> resolvedArtifacts) throws MojoExecutionException {
     try {
 
+      final List<URL> classpath = generateExecutionClasspath(resolvedArtifacts);
 
-      /*
-      * Convert each resolved artifact into a URL/classpath element.
-      */
-      final List<URL> classpath = new ArrayList<URL>();
-      int index = 0;
-      for (Artifact resolvedArtifact : resolvedArtifacts) {
-        final File file = resolvedArtifact.getFile();
-        if (file != null) {
-          classpath.add(file.toURI().toURL());
-        }
-      }
-      
       // check to see if someone is adding build listeners on the classpath, and if so, bring in the system classpath and add it to our urls
       // IDEA for example does this
       if (System.getProperty("grails.build.listeners") != null) {
         String cp = System.getProperty("java.class.path");
-        for( String c : cp.split(":") ) {
+        for (String c : cp.split(":")) {
           File f = new File(c);
           if (f.exists())
             classpath.add(f.toURI().toURL());
         }
       }
-      
+
       for (URL url : classpath) {
         getLog().debug("classpath " + url.toString());
       }
@@ -586,13 +627,13 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * all others.
    *
    * @param dependencies A list of dependencies to be filtered.
-   * @param groupId      The group ID of the requested dependencies.
+   * @param groupIds     The group IDs of the requested dependencies.
    * @return The filtered list of dependencies.
    */
-  private List<Dependency> filterForGrailsDependencies(final List<Dependency> dependencies, final String groupId) {
+  private List<Dependency> filterDependencies(final List<Dependency> dependencies, List<String> groupIds) {
     final List<Dependency> filteredDependencies = new ArrayList<Dependency>();
     for (final Dependency dependency : dependencies) {
-      if (dependency.getGroupId().equals(groupId) && !"grails-dependencies".equals(dependency.getArtifactId()) ) {
+      if (groupIds.contains(dependency.getGroupId()) && !"grails-dependencies".equals(dependency.getArtifactId())) {
         filteredDependencies.add(dependency);
       }
     }
@@ -600,9 +641,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   }
 
 
-  Set<Artifact> getResolvedArtifactsFromUnresolvedDependencies(List<Dependency> unresolvedDependencies) throws MojoExecutionException {
+  Set<Artifact> getResolvedArtifactsFromUnresolvedDependencies(List<Dependency> unresolvedDependencies, String groupId, String artifactId) throws MojoExecutionException {
     final Set<Artifact> resolvedArtifacts = new HashSet<Artifact>();
-    Artifact mojoArtifact = this.artifactFactory.createBuildArtifact("com.bluetrainsoftware.bluegrails", "maven-project", "1", "pom");
+    Artifact mojoArtifact = this.artifactFactory.createBuildArtifact(groupId, artifactId, "1", "pom");
 
     /*
     * Resolve each artifact.  This will get all transitive artifacts AND eliminate conflicts.
@@ -626,6 +667,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 //    }
 
     return resolvedArtifacts;
+  }
+
+  Set<Artifact> getResolvedArtifactsFromUnresolvedDependencies(List<Dependency> unresolvedDependencies) throws MojoExecutionException {
+    return getResolvedArtifactsFromUnresolvedDependencies(unresolvedDependencies, "com.bluetrainsoftware.bluegrails", "maven-project");
   }
 
   /**
@@ -671,17 +716,17 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     return resolvedArtifacts;
   }
 
-  
+
   private String getPluginName(Artifact plugin) {
     String pluginName = plugin.getArtifactId();
-    
+
     if (pluginName.startsWith(PLUGIN_PREFIX)) {
       return pluginName.substring(PLUGIN_PREFIX.length());
     } else {
       return pluginName;
     }
   }
-  
+
   private File getPluginTargetDir(Artifact plugin) {
     String pluginLocationOverride = System.getProperty(plugin.getGroupId() + ":" + plugin.getArtifactId());
 
@@ -703,7 +748,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     return targetDir;
   }
 
-  
+
   /**
    * Installs a Grails plugin into the current project if it isn't
    * already installed. It works by simply unpacking the plugin
@@ -728,10 +773,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     final GrailsLauncher launcher,
     Field settingsField,
     Class clazz) throws IOException, ArchiverException {
-    
-    
+
+
     File targetDir = getPluginTargetDir(plugin);
-    
+
     String pluginName = getPluginName(plugin);
     final String pluginVersion = plugin.getVersion();
 
