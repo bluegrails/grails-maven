@@ -412,14 +412,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         if (value instanceof String || value instanceof GString) {
           String realKey = key.toString();
           if (GRAILS_PROPERTY_LIST.contains(realKey)) {
-            System.out.println(realKey + "=" + value.toString());
+            System.out.println(realKey + "=" + value.toString().replace('\\', '/'));
           }
         }
       }
 
       for (Artifact plugin : pluginArtifacts) {
         File targetDir = getPluginTargetDir(plugin);
-        System.out.println("grails.plugin.location." + getPluginName(plugin) + "=" + targetDir.getAbsolutePath());
+        System.out.println("grails.plugin.location." + getPluginName(plugin) + "=" + targetDir.getAbsolutePath().replace('\\', '/'));
       }
 
       System.out.println();
