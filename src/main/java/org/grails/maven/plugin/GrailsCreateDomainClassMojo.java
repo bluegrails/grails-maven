@@ -32,14 +32,14 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class GrailsCreateDomainClassMojo extends AbstractGrailsMojo {
 
-    /**
-     * The name for the domain class to create.
-     *
-     * @parameter expression="${domainClassName}"
-     */
-    private String domainClassName;
+  /**
+   * The name for the domain class to create.
+   *
+   * @parameter expression="${domainClassName}"
+   */
+  private String domainClassName;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails("CreateDomainClass", domainClassName);
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails("CreateDomainClass", domainClassName);
+  }
 }

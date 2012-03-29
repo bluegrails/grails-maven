@@ -30,18 +30,18 @@ import org.apache.maven.plugin.MojoFailureException;
  * @since 0.4
  */
 public class GrailsUninstallPluginMojo extends AbstractGrailsMojo {
-    /**
-     * The name of the artifact to install.
-     *
-     * @parameter expression="${pluginName}"
-     */
-    private String pluginName;
+  /**
+   * The name of the artifact to install.
+   *
+   * @parameter expression="${pluginName}"
+   */
+  private String pluginName;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        if (pluginName == null) {
-            throw new MojoFailureException("'pluginName' must be specified.");
-        }
-
-        runGrails("UninstallPlugin", pluginName);
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    if (pluginName == null) {
+      throw new MojoFailureException("'pluginName' must be specified.");
     }
+
+    runGrails("UninstallPlugin", pluginName);
+  }
 }

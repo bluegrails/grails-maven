@@ -33,14 +33,14 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class GrailsGenerateAllMojo extends AbstractGrailsMojo {
 
-    /**
-     * The name of the domain class to generate the CRUD interface.
-     *
-     * @parameter expression="${domainClass}"
-     */
-    private String domainClassName;
+  /**
+   * The name of the domain class to generate the CRUD interface.
+   *
+   * @parameter expression="${domainClass}"
+   */
+  private String domainClassName;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails("GenerateAll", domainClassName);
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails("GenerateAll", domainClassName);
+  }
 }

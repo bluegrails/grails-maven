@@ -31,14 +31,14 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class GrailsGenerateControllerMojo extends AbstractGrailsMojo {
 
-    /**
-     * The name of the domain class to generate the CRUD controller.
-     *
-     * @parameter expression="${domainClassName}"
-     */
-    private String domainClassName;
+  /**
+   * The name of the domain class to generate the CRUD controller.
+   *
+   * @parameter expression="${domainClassName}"
+   */
+  private String domainClassName;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails("GenerateController", domainClassName);
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails("GenerateController", domainClassName);
+  }
 }

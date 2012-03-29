@@ -31,31 +31,31 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class MvnInitializeMojo extends AbstractGrailsMojo {
 
-    /**
-     * The artifact id of the project.
-     *
-     * @parameter expression="${project.artifactId}"
-     * @required
-     * @readonly
-     */
-    private String artifactId;
+  /**
+   * The artifact id of the project.
+   *
+   * @parameter expression="${project.artifactId}"
+   * @required
+   * @readonly
+   */
+  private String artifactId;
 
-    /**
-     * The version id of the project.
-     *
-     * @parameter expression="${project.version}"
-     * @required
-     * @readonly
-     */
-    private String version;
+  /**
+   * The version id of the project.
+   *
+   * @parameter expression="${project.version}"
+   * @required
+   * @readonly
+   */
+  private String version;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        try {
-            getGrailsServices().readProjectDescriptor();
-        } catch (final MojoExecutionException ex) {
-            // Initialise the app.
-            getLog().info("Cannot read application info, so initialising new application.");
-            runGrails("CreateApp", "--inplace --appVersion=" + version + " " + artifactId);
-        }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    try {
+      getGrailsServices().readProjectDescriptor();
+    } catch (final MojoExecutionException ex) {
+      // Initialise the app.
+      getLog().info("Cannot read application info, so initialising new application.");
+      runGrails("CreateApp", "--inplace --appVersion=" + version + " " + artifactId);
     }
+  }
 }

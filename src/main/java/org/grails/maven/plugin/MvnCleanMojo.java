@@ -32,12 +32,12 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class MvnCleanMojo extends AbstractGrailsMojo {
 
-    /**
-     * Executes the MvnWarMojo on the current project.
-     *
-     * @throws MojoExecutionException if an error occured while building the webapp
-     */
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails("Clean");
-    }
+  /**
+   * Executes the MvnWarMojo on the current project.
+   *
+   * @throws MojoExecutionException if an error occured while building the webapp
+   */
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails("Clean");
+  }
 }

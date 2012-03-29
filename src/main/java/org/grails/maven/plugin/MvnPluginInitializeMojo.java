@@ -31,33 +31,33 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class MvnPluginInitializeMojo extends AbstractGrailsMojo {
 
-    /**
-     * The artifact id of the project.
-     *
-     * @parameter expression="${project.artifactId}"
-     * @required
-     * @readonly
-     */
-    private String artifactId;
+  /**
+   * The artifact id of the project.
+   *
+   * @parameter expression="${project.artifactId}"
+   * @required
+   * @readonly
+   */
+  private String artifactId;
 
-    /**
-     * The version id of the project.
-     *
-     * @parameter expression="${project.version}"
-     * @required
-     * @readonly
-     */
-    private String version;
+  /**
+   * The version id of the project.
+   *
+   * @parameter expression="${project.version}"
+   * @required
+   * @readonly
+   */
+  private String version;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        try {
-            getGrailsServices().readProjectDescriptor();
-        } catch (final MojoExecutionException ex) {
-            final String pluginName = artifactId.substring(PLUGIN_PREFIX.length());
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    try {
+      getGrailsServices().readProjectDescriptor();
+    } catch (final MojoExecutionException ex) {
+      final String pluginName = artifactId.substring(PLUGIN_PREFIX.length());
 
-            // Initialise the plugin.
-            getLog().info("Cannot read application info, so initialising new plugin.");
-            runGrails("CreatePlugin", "--inplace --appVersion=" + version + " " + pluginName);
-        }
+      // Initialise the plugin.
+      getLog().info("Cannot read application info, so initialising new plugin.");
+      runGrails("CreatePlugin", "--inplace --appVersion=" + version + " " + pluginName);
     }
+  }
 }

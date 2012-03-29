@@ -32,14 +32,14 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class GrailsCreateServiceMojo extends AbstractGrailsMojo {
 
-    /**
-     * The name for the service to create.
-     *
-     * @parameter expression="${serviceName}"
-     */
-    private String serviceName;
+  /**
+   * The name for the service to create.
+   *
+   * @parameter expression="${serviceName}"
+   */
+  private String serviceName;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails("CreateService", serviceName);
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails("CreateService", serviceName);
+  }
 }

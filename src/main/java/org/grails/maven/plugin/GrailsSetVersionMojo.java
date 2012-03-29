@@ -32,7 +32,7 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class GrailsSetVersionMojo extends AbstractGrailsMojo {
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails("SetVersion", project.getVersion());
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails("SetVersion", project.getVersion());
+  }
 }

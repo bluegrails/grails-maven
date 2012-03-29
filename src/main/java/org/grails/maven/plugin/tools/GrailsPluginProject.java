@@ -7,31 +7,31 @@ import java.io.File;
  * @version $Id$
  */
 public class GrailsPluginProject {
-    private String pluginName;
-    private File fileName;
-    private String version;
+  private String pluginName;
+  private File fileName;
+  private String version;
 
-    public String getPluginName() {
-        return pluginName;
-    }
+  public String getPluginName() {
+    return pluginName;
+  }
 
-    public void setPluginName(String pluginName) {
-        this.pluginName = pluginName;
-    }
+  public void setPluginName(String pluginName) {
+    this.pluginName = pluginName;
+  }
 
-    public File getFileName() {
-        return fileName;
-    }
+  public File getFileName() {
+    return fileName;
+  }
 
-    public void setFileName(File fileName) {
-        this.fileName = fileName;
-    }
+  public void setFileName(File fileName) {
+    this.fileName = fileName;
+  }
 
-    public String getVersion() {
-        return version;
-    }
+  public String getVersion() {
+    return version;
+  }
 
-    public void setVersion(String version) {
-        this.version = version;
-    }
+  public void setVersion(String version) {
+    this.version = version;
+  }
 }

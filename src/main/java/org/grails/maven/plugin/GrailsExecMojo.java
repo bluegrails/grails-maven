@@ -32,22 +32,22 @@ import grails.util.GrailsNameUtils;
  */
 public class GrailsExecMojo extends AbstractGrailsMojo {
 
-    /**
-     * Set this to name of the command you want to execute.
-     *
-     * @parameter expression="${command}"
-     * @required
-     */
-    private String command;
+  /**
+   * Set this to name of the command you want to execute.
+   *
+   * @parameter expression="${command}"
+   * @required
+   */
+  private String command;
 
-    /**
-     * Set this to the arguments you want to pass to the command.
-     *
-     * @parameter expression="${args}"
-     */
-    private String args;
+  /**
+   * Set this to the arguments you want to pass to the command.
+   *
+   * @parameter expression="${args}"
+   */
+  private String args;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails(GrailsNameUtils.getNameFromScript(command), args);
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails(GrailsNameUtils.getNameFromScript(command), args);
+  }
 }

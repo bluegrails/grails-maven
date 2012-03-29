@@ -22,38 +22,39 @@ import org.apache.maven.plugin.MojoFailureException;
  * @description Creates a WAR archive and register it in maven.
  * @goal maven-grails-app-war
  * @phase package
- * @requiresDependencyResolution  test
+ * @requiresDependencyResolution test
  * @since 1.1
  */
 public class MvnGrailsAppWarMojo extends MvnWarMojo {
-    /**
-     * The maven artifact.
-     *
-     * @parameter expression="${project.artifact}"
-     * @required
-     * @readonly
-     */
-    private Artifact artifact;
+  /**
+   * The maven artifact.
+   *
+   * @parameter expression="${project.artifact}"
+   * @required
+   * @readonly
+   */
+  private Artifact artifact;
 
-    /**
-     * The artifact handler.
-     *
-     * @parameter expression="${component.org.apache.maven.artifact.handler.ArtifactHandler#grails-app}"
-     * @required
-     * @readonly
-     */
-    private ArtifactHandler artifactHandler;
+  /**
+   * The artifact handler.
+   *
+   * @parameter expression="${component.org.apache.maven.artifact.handler.ArtifactHandler#grails-app}"
+   * @required
+   * @readonly
+   */
+  private ArtifactHandler artifactHandler;
 
-    /**
-     * Executes the MvnWarMojo on the current project.
-     *
-     * @throws org.apache.maven.plugin.MojoExecutionException if an error occured while building the webapp
-     */
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        super.execute();
+  /**
+   * Executes the MvnWarMojo on the current project.
+   *
+   * @throws org.apache.maven.plugin.MojoExecutionException
+   *          if an error occured while building the webapp
+   */
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    super.execute();
 
-        // Make the WAR file the build artifact.
-        artifact.setFile(warFile);
-        artifact.setArtifactHandler(artifactHandler);
-    }
+    // Make the WAR file the build artifact.
+    artifact.setFile(warFile);
+    artifact.setArtifactHandler(artifactHandler);
+  }
 }

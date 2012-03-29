@@ -32,15 +32,15 @@ import org.apache.maven.plugin.MojoFailureException;
  * @since 0.3
  */
 public class MvnConfigDirectoriesMojo extends AbstractGrailsMojo {
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.apache.maven.plugin.Mojo#execute()
-     */
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        final File projectDir = this.project.getBasedir();
+  /*
+  * (non-Javadoc)
+  *
+  * @see org.apache.maven.plugin.Mojo#execute()
+  */
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    final File projectDir = this.project.getBasedir();
 
-        // Get all the sub-directories of the "plugins" dir.
+    // Get all the sub-directories of the "plugins" dir.
 //        File pluginsDir = new File(projectDir, "plugins");
 //        File[] dirs = pluginsDir.listFiles(new FileFilter() {
 //            public boolean accept(File file) {
@@ -48,27 +48,27 @@ public class MvnConfigDirectoriesMojo extends AbstractGrailsMojo {
 //            }
 //        });
 
-        // Add the "src/java" directory in each plugin to the compiler's
-        // source.
+    // Add the "src/java" directory in each plugin to the compiler's
+    // source.
 //        for (int i = 0; i < dirs.length; i++) {
 //            this.project.addCompileSourceRoot(new File(dirs[i], "src/java").getAbsolutePath());
 //        }
 
-        // Add sources directories
-        this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/conf")).getAbsolutePath());
-        this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/controllers")).getAbsolutePath());
-        this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/domain")).getAbsolutePath());
-        this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/services")).getAbsolutePath());
-        this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/taglib")).getAbsolutePath());
-        this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/utils")).getAbsolutePath());
-        this.project.addCompileSourceRoot((new File(projectDir, "/src/groovy")).getAbsolutePath());
-        this.project.addCompileSourceRoot((new File(projectDir, "src/java")).getAbsolutePath());
+    // Add sources directories
+    this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/conf")).getAbsolutePath());
+    this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/controllers")).getAbsolutePath());
+    this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/domain")).getAbsolutePath());
+    this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/services")).getAbsolutePath());
+    this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/taglib")).getAbsolutePath());
+    this.project.addCompileSourceRoot((new File(projectDir, "/grails-app/utils")).getAbsolutePath());
+    this.project.addCompileSourceRoot((new File(projectDir, "/src/groovy")).getAbsolutePath());
+    this.project.addCompileSourceRoot((new File(projectDir, "src/java")).getAbsolutePath());
 
-        // Add tests directories
-        this.project.addTestCompileSourceRoot((new File(projectDir, "test/unit")).getAbsolutePath());
-        this.project.addTestCompileSourceRoot((new File(projectDir, "test/integration")).getAbsolutePath());
+    // Add tests directories
+    this.project.addTestCompileSourceRoot((new File(projectDir, "test/unit")).getAbsolutePath());
+    this.project.addTestCompileSourceRoot((new File(projectDir, "test/integration")).getAbsolutePath());
 
-        // Change output dir
+    // Change output dir
 //        this.project.getModel().getBuild().setOutputDirectory("web-app/WEB-INF/classes");
-    }
+  }
 }

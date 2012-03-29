@@ -32,14 +32,14 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class GrailsCreateScriptMojo extends AbstractGrailsMojo {
 
-    /**
-     * The name for the script to create.
-     *
-     * @parameter expression="${scriptName}"
-     */
-    private String scriptName;
+  /**
+   * The name for the script to create.
+   *
+   * @parameter expression="${scriptName}"
+   */
+  private String scriptName;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails("CreateScript", scriptName);
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails("CreateScript", scriptName);
+  }
 }

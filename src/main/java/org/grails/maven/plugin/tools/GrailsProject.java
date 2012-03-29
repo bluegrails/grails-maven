@@ -21,36 +21,36 @@ package org.grails.maven.plugin.tools;
  */
 public class GrailsProject {
 
-    private String appGrailsVersion;
-    private String appName;
-    private String appVersion;
+  private String appGrailsVersion;
+  private String appName;
+  private String appVersion;
 
-    /**
-     * The default value for app.version when it's not defined in older grails versions.
-     */
-    public static final String DEFAULT_APP_VERSION = "1.0-SNAPSHOT";
+  /**
+   * The default value for app.version when it's not defined in older grails versions.
+   */
+  public static final String DEFAULT_APP_VERSION = "1.0-SNAPSHOT";
 
-    public String getAppGrailsVersion() {
-        return appGrailsVersion;
-    }
+  public String getAppGrailsVersion() {
+    return appGrailsVersion;
+  }
 
-    public void setAppGrailsVersion(String appGrailsVersion) {
-        this.appGrailsVersion = appGrailsVersion;
-    }
+  public void setAppGrailsVersion(String appGrailsVersion) {
+    this.appGrailsVersion = appGrailsVersion;
+  }
 
-    public String getAppName() {
-        return appName;
-    }
+  public String getAppName() {
+    return appName;
+  }
 
-    public void setAppName(String appName) {
-        this.appName = appName;
-    }
+  public void setAppName(String appName) {
+    this.appName = appName;
+  }
 
-    public String getAppVersion() {
-        return appVersion;
-    }
+  public String getAppVersion() {
+    return appVersion;
+  }
 
-    public void setAppVersion(String appVersion) {
-        this.appVersion = appVersion;
-    }
+  public void setAppVersion(String appVersion) {
+    this.appVersion = appVersion;
+  }
 }

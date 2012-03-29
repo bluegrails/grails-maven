@@ -35,14 +35,14 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class GrailsCreateIntegrationTestMojo extends AbstractGrailsMojo {
 
-    /**
-     * The name for the unit test to create.
-     *
-     * @parameter expression="${integrationTestName}"
-     */
-    private String integrationTestName;
+  /**
+   * The name for the unit test to create.
+   *
+   * @parameter expression="${integrationTestName}"
+   */
+  private String integrationTestName;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails("CreateIntegrationTest", integrationTestName);
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails("CreateIntegrationTest", integrationTestName);
+  }
 }

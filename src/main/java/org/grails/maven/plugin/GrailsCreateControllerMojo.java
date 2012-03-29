@@ -35,14 +35,14 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class GrailsCreateControllerMojo extends AbstractGrailsMojo {
 
-    /**
-     * The name for the controller to create.
-     *
-     * @parameter expression="${controllerName}"
-     */
-    private String controllerName;
+  /**
+   * The name for the controller to create.
+   *
+   * @parameter expression="${controllerName}"
+   */
+  private String controllerName;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails("CreateController", this.controllerName);
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails("CreateController", this.controllerName);
+  }
 }

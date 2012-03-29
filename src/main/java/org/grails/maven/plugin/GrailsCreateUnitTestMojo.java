@@ -34,14 +34,14 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class GrailsCreateUnitTestMojo extends AbstractGrailsMojo {
 
-    /**
-     * The name for the unit test to create.
-     *
-     * @parameter expression="${unitTestName}"
-     */
-    private String unitTestName;
+  /**
+   * The name for the unit test to create.
+   *
+   * @parameter expression="${unitTestName}"
+   */
+  private String unitTestName;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails("CreateUnitTest", unitTestName);
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails("CreateUnitTest", unitTestName);
+  }
 }

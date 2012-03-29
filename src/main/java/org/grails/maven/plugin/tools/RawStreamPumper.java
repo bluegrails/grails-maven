@@ -25,84 +25,84 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public class RawStreamPumper extends Thread {
-    byte buffer[] = new byte[256];
+  byte buffer[] = new byte[256];
 
-    boolean done;
+  boolean done;
 
-    private InputStream in;
+  private InputStream in;
 
-    private OutputStream out;
+  private OutputStream out;
 
-    boolean poll;
+  boolean poll;
 
-    public RawStreamPumper(InputStream in, OutputStream out) {
+  public RawStreamPumper(InputStream in, OutputStream out) {
 
-	this.in = in;
-	this.out = out;
-	this.poll = false;
+    this.in = in;
+    this.out = out;
+    this.poll = false;
 
+  }
+
+  public RawStreamPumper(InputStream in, OutputStream out, boolean poll) {
+
+    this.in = in;
+    this.out = out;
+    this.poll = poll;
+
+  }
+
+  public void closeInput() {
+
+    IOUtil.close(in);
+
+  }
+
+  public void closeOutput() {
+
+    IOUtil.close(out);
+
+  }
+
+  public void run() {
+
+    try {
+      if (poll) {
+        while (!done) {
+          if (in.available() > 0) {
+            int i = in.read(buffer);
+            if (i != -1) {
+              out.write(buffer, 0, i);
+              out.flush();
+            } else {
+              done = true;
+            }
+          } else {
+            Thread.sleep(1);
+          }
+        }
+      } else {
+        int i = in.read(buffer);
+        while (i != -1 && !done) {
+          if (i != -1) {
+            out.write(buffer, 0, i);
+            out.flush();
+          } else {
+            done = true;
+          }
+          i = in.read(buffer);
+        }
+      }
+    } catch (Throwable e) {
+      // Catched everything
+    } finally {
+      done = true;
     }
 
-    public RawStreamPumper(InputStream in, OutputStream out, boolean poll) {
+  }
 
-	this.in = in;
-	this.out = out;
-	this.poll = poll;
+  public void setDone() {
 
-    }
+    done = true;
 
-    public void closeInput() {
-
-	IOUtil.close(in);
-
-    }
-
-    public void closeOutput() {
-
-	IOUtil.close(out);
-
-    }
-
-    public void run() {
-
-	try {
-	    if (poll) {
-		while (!done) {
-		    if (in.available() > 0) {
-			int i = in.read(buffer);
-			if (i != -1) {
-			    out.write(buffer, 0, i);
-			    out.flush();
-			} else {
-			    done = true;
-			}
-		    } else {
-			Thread.sleep(1);
-		    }
-		}
-	    } else {
-		int i = in.read(buffer);
-		while (i != -1 && !done) {
-		    if (i != -1) {
-			out.write(buffer, 0, i);
-			out.flush();
-		    } else {
-			done = true;
-		    }
-		    i = in.read(buffer);
-		}
-	    }
-	} catch (Throwable e) {
-	    // Catched everything
-	} finally {
-	    done = true;
-	}
-
-    }
-
-    public void setDone() {
-
-	done = true;
-
-    }
+  }
 }

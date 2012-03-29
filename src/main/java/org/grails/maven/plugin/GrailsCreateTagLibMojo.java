@@ -31,14 +31,14 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class GrailsCreateTagLibMojo extends AbstractGrailsMojo {
 
-    /**
-     * The name for the taglib to create.
-     *
-     * @parameter expression="${tagLibName}"
-     */
-    private String tagLibName;
+  /**
+   * The name for the taglib to create.
+   *
+   * @parameter expression="${tagLibName}"
+   */
+  private String tagLibName;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        runGrails("CreateTagLib", tagLibName);
-    }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    runGrails("CreateTagLib", tagLibName);
+  }
 }
