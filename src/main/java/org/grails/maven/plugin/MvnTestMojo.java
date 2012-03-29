@@ -40,7 +40,7 @@ public class MvnTestMojo extends AbstractGrailsMojo {
      private boolean skipTests;
 
      /**
-      * Set this to 'true' to bypass unit/integration tests entirely. Its use is
+      * Set this to 'true' to bypass unit tests entirely. Its use is
       * NOT RECOMMENDED, but quite convenient on occasion.
       *
      * @parameter expression="${grails.test.skip}"
@@ -85,8 +85,10 @@ public class MvnTestMojo extends AbstractGrailsMojo {
             }
         }
 
+
+
         try {
-            runGrails("TestApp", "--unit --integration");
+            runGrails("TestApp", "--unit");
         } catch (MojoExecutionException me) {
             if (!testFailureIgnore) {
                 throw me;

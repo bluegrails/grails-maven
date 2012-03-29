@@ -90,6 +90,7 @@
               <compile>com.bluetrainsoftware.bluegrails:grails-maven-plugin:maven-compile</compile>
               <test>com.bluetrainsoftware.bluegrails:grails-maven-plugin:maven-test</test>
               <package>com.bluetrainsoftware.bluegrails:grails-maven-plugin:package-plugin</package>
+              <integration-test>com.bluetrainsoftware.bluegrails:grails-maven-plugin:maven-functional-test</integration-test>
               <install>org.apache.maven.plugins:maven-install-plugin:install</install>
               <deploy>org.apache.maven.plugins:maven-deploy-plugin:deploy</deploy>
             </phases>
