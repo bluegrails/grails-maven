@@ -32,67 +32,67 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class MvnTestMojo extends AbstractGrailsMojo {
 
-    /**
-     * Set this to 'true' to bypass unit/integration tests entirely. Its use is
-      * @parameter default-value="false" expression="${skipTests}"
-      * @since 0.4
-      */
-     private boolean skipTests;
+  /**
+   * Set this to 'true' to bypass unit/integration tests entirely. Its use is
+   *
+   * @parameter default-value="false" expression="${skipTests}"
+   * @since 0.4
+   */
+  private boolean skipTests;
 
-     /**
-      * Set this to 'true' to bypass unit tests entirely. Its use is
-      * NOT RECOMMENDED, but quite convenient on occasion.
-      *
-     * @parameter expression="${grails.test.skip}"
-     * @since 0.3
-     */
-    private boolean skip;
+  /**
+   * Set this to 'true' to bypass unit tests entirely. Its use is
+   * NOT RECOMMENDED, but quite convenient on occasion.
+   *
+   * @parameter expression="${grails.test.skip}"
+   * @since 0.3
+   */
+  private boolean skip;
 
-    /**
-     * Set this to 'true' to bypass unit/integration tests entirely. Its use is
-     * NOT RECOMMENDED, but quite convenient on occasion.
-     *
-     * @parameter expression="${maven.test.skip}"
-     * @since 0.3
-     */
-    private Boolean mavenSkip;
+  /**
+   * Set this to 'true' to bypass unit/integration tests entirely. Its use is
+   * NOT RECOMMENDED, but quite convenient on occasion.
+   *
+   * @parameter expression="${maven.test.skip}"
+   * @since 0.3
+   */
+  private Boolean mavenSkip;
 
-    /**
-     * Set this to "true" to ignore a failure during testing. Its use is NOT RECOMMENDED, but quite convenient on
-     * occasion.
-     *
-     * @parameter default-value="false" expression="${maven.test.failure.ignore}"
-     */
-    private boolean testFailureIgnore;
+  /**
+   * Set this to "true" to ignore a failure during testing. Its use is NOT RECOMMENDED, but quite convenient on
+   * occasion.
+   *
+   * @parameter default-value="false" expression="${maven.test.failure.ignore}"
+   */
+  private boolean testFailureIgnore;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        if (skipTests || skip || (mavenSkip != null && mavenSkip.booleanValue())) {
-            getLog().info("Tests are skipped.");
-            return;
-        }
-
-        // -----------------------------------------------------------------------
-        // If the current environment is test or production, default to not run
-        // the tests
-        // -----------------------------------------------------------------------
-
-        if (mavenSkip == null && env != null) {
-            if (env.equals("test") || env.startsWith("prod")) {
-                getLog().info("Skipping tests as the current environment is set to test or production.");
-                getLog().info("Set maven.test.skip to false to prevent this behaviour");
-
-                return;
-            }
-        }
-
-
-
-        try {
-            runGrails("TestApp", "--unit");
-        } catch (MojoExecutionException me) {
-            if (!testFailureIgnore) {
-                throw me;
-            }
-        }
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    if (skipTests || skip || (mavenSkip != null && mavenSkip.booleanValue())) {
+      getLog().info("Tests are skipped.");
+      return;
     }
+
+    // -----------------------------------------------------------------------
+    // If the current environment is test or production, default to not run
+    // the tests
+    // -----------------------------------------------------------------------
+
+    if (mavenSkip == null && env != null) {
+      if (env.equals("test") || env.startsWith("prod")) {
+        getLog().info("Skipping tests as the current environment is set to test or production.");
+        getLog().info("Set maven.test.skip to false to prevent this behaviour");
+
+        return;
+      }
+    }
+
+
+    try {
+      runGrails("TestApp", "--unit");
+    } catch (MojoExecutionException me) {
+      if (!testFailureIgnore) {
+        throw me;
+      }
+    }
+  }
 }
