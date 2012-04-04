@@ -239,7 +239,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       try {
         text = readFileAsString( gpFile );
         mod = text.replaceFirst(GRAILS_PLUGIN_VERSION_PATTERN, "$1"+project.getVersion()+"$5");
-        System.out.println(mod);
       } catch ( IOException e ) {
         // ignore
       }
