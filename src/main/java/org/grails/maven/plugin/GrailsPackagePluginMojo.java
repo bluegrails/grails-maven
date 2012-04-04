@@ -55,6 +55,8 @@ public class GrailsPackagePluginMojo extends AbstractGrailsMojo {
   protected ArtifactHandler artifactHandler;
 
   public void execute() throws MojoExecutionException, MojoFailureException {
+    syncAppVersion();
+
     // First package the plugin using the Grails script.
     runGrails("PackagePlugin");
 

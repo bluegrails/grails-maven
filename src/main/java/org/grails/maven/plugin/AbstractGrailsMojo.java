@@ -231,7 +231,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     syncVersion(metadata);
     metadata.persist();
 
-    final String fName = this.getBasedir() + GrailsNameUtils.getNameFromScript( project.getArtifactId() ) + "GrailsPlugin.groovy";
+    final String fName = this.getBasedir() + File.separator + GrailsNameUtils.getNameFromScript( project.getArtifactId() ) + "GrailsPlugin.groovy";
     File gpFile = new File( fName );
     if ( gpFile.exists() ) {
       String text = null;
@@ -239,6 +239,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       try {
         text = readFileAsString( gpFile );
         mod = text.replaceFirst(GRAILS_PLUGIN_VERSION_PATTERN, "$1"+project.getVersion()+"$5");
+        System.out.println(mod);
       } catch ( IOException e ) {
         // ignore
       }
