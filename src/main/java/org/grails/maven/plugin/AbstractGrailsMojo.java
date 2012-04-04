@@ -16,12 +16,10 @@
 
 package org.grails.maven.plugin;
 
+import grails.util.GrailsNameUtils;
 import grails.util.Metadata;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -66,6 +64,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   public static final String PLUGIN_PREFIX = "grails-";
 
   private static final String GRAILS_PLUGIN_NAME_FORMAT = "plugins.%s:%s";
+  private static final String GRAILS_PLUGIN_VERSION_PATTERN = "((def|String)\\s*version\\s*=\\s*(\"|'))(.*)(\"|')";
+
   public static final String APP_GRAILS_VERSION = "app.grails.version";
   public static final String APP_VERSION = "app.version";
 
@@ -211,12 +211,61 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     return grailsServices;
   }
 
+  private String readFileAsString( File file ) throws java.io.IOException {
+    byte[] buffer = new byte[ (int) file.length() ];
+    BufferedInputStream bis = null;
+    try {
+      bis = new BufferedInputStream( new FileInputStream( file ) );
+      bis.read( buffer );
+    } finally {
+      if( bis != null ) try {
+        bis.close();
+      } catch ( IOException ignored ) {
+      }
+    }
+    return new String( buffer );
+  }
+
   protected void syncAppVersion() {
     final Metadata metadata = Metadata.getInstance(new File(getBasedir(), "application.properties"));
-
     syncVersion(metadata);
-
     metadata.persist();
+
+    final String fName = this.getBasedir() + GrailsNameUtils.getNameFromScript( project.getArtifactId() ) + "GrailsPlugin.groovy";
+    File gpFile = new File( fName );
+    if ( gpFile.exists() ) {
+      String text = null;
+      String mod = null;
+      try {
+        text = readFileAsString( gpFile );
+        mod = text.replaceFirst(GRAILS_PLUGIN_VERSION_PATTERN, "$1"+project.getVersion()+"$5");
+      } catch ( IOException e ) {
+        // ignore
+      }
+      if ( text != null && !mod.equalsIgnoreCase(text) ){
+        BufferedOutputStream out = null;
+        try {
+          out = new BufferedOutputStream(new FileOutputStream( gpFile ) );
+          out.write(mod.getBytes());
+        }
+        catch (IOException e) {
+          // do nuffink
+        }
+        finally {
+          if ( out != null) {
+            try {
+              out.close();
+            }
+            catch (Exception ignored) {
+              // ignored
+            }
+          }
+        }
+
+      }
+
+    }
+
   }
 
   // we are getting a situation where the same goal is running twice - two compiles, two test apps. This is a hack fix until the real cause is discovered.
