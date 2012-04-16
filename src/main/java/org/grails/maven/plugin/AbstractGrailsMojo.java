@@ -185,6 +185,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    */
   private String servletServerFactory;
 
+  /**
+   * We want this to come from the main pom so we can re-write the dependencies of the plugin to match
+   *
+   * @parameter expression="${grails.version}
+   */
+
+  private String grailsVersion;
+
 
   /**
    * Returns the configured base directory for this execution of the plugin.
@@ -316,7 +324,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     lastArgs = args;
     lastTargetName = targetName;
 
-    getLog().info("Grails target: " + targetName + " raw args:" + args);
+    getLog().info("Grails target: " + targetName + " raw args:" + args + " -------------->" + grailsVersion);
 
     // hold onto it as it holds the jLine.Terminal class we need to reset the terminal back to normal. We have to do it this
     // way as on Windows it fails as we hold a ref and the Grails class loader holds a ref, JLine tries to duplicate load the
@@ -582,9 +590,21 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     */
     unresolvedDependencies.addAll(this.project.getDependencies());
 
-    unresolvedDependencies.addAll(filterDependencies(pluginProject.getDependencies(), Arrays.asList("org.grails")));
+    unresolvedDependencies.addAll(replaceVersion(filterDependencies(pluginProject.getDependencies(), Arrays.asList("org.grails"))));
 
     return getResolvedArtifactsFromUnresolvedDependencies(unresolvedDependencies);
+  }
+
+  private Collection<Dependency> replaceVersion(List<Dependency> dependencies) {
+    if (grailsVersion != null) {
+      for(Dependency d : dependencies) {
+        if ("org.grails".equals(d.getGroupId()) && !grailsVersion.equals(d.getVersion()) && grailsVersion.charAt(0) == d.getVersion().charAt(0)) {
+          d.setVersion( grailsVersion );
+        }
+      }
+    }
+    
+    return dependencies;
   }
 
 
@@ -634,9 +654,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         }
       }
 
-      for (URL url : classpath) {
-        getLog().debug("classpath " + url.toString());
-      }
+//      for (URL url : classpath) {
+//        getLog().debug("classpath " + url.toString());
+//      }
 
       /*
       * Add the "tools.jar" to the classpath so that the Grails scripts can run native2ascii.
