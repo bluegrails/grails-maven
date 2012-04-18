@@ -11,7 +11,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.bluetrainsoftware.bluegrails</groupId>
   <artifactId>grails-maven-plugin</artifactId>
-  <version>1.9</version>
+  <version>1.11</version>
   <packaging>maven-plugin</packaging>
 
   <name>Maven plugin for GRAILS applications</name>

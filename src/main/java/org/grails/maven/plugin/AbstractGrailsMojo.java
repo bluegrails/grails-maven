@@ -276,6 +276,11 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
   }
 
+
+  private boolean isWindows() {
+    return System.getProperty("os.name").toLowerCase().indexOf("windows") != -1;
+  }
+
   // we are getting a situation where the same goal is running twice - two compiles, two test apps. This is a hack fix until the real cause is discovered.
   private static String lastTargetName;
   private static String lastArgs;
@@ -367,8 +372,16 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       final String grailsHomePath = (grailsHome != null) ? grailsHome.getAbsolutePath() : null;
       RootLoader rootLoader = new RootLoader(classpath, jlineClassloaderParent);
 
-      System.setProperty("grails.console.enable.terminal", "false");
-      System.setProperty("grails.console.enable.interactive", "false");
+
+      if (isWindows()) { // force console and interactive on to get around _GrailsRun.groovy windows bug where attaches to grailsConsole.reader.add...
+        System.setProperty("grails.console.enable.terminal", "true");
+        System.setProperty("grails.console.enable.interactive", "true");
+      } else {
+        if (System.getProperty("grails.console.enable.terminal") == null)
+          System.setProperty("grails.console.enable.terminal", "false");
+        if (System.getProperty("grails.console.enable.interactive") == null)
+          System.setProperty("grails.console.enable.interactive", "false");
+      }
 
       try {
         Class cls = rootLoader.loadClass("org.springframework.util.Log4jConfigurer");
