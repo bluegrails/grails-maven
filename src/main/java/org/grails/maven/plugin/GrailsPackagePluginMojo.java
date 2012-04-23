@@ -70,7 +70,7 @@ public class GrailsPackagePluginMojo extends AbstractGrailsMojo {
     File mavenZipFile = new File(project.getBuild().getDirectory(), zipFileName);
     mavenZipFile.delete();
     if (!zipGeneratedByGrails.renameTo(mavenZipFile)) {
-      throw new MojoExecutionException("Unable to copy the plugin ZIP to the target directory");
+      throw new MojoExecutionException("Unable to copy the plugin ZIP to the target directory (" + zipGeneratedByGrails.getAbsolutePath() + " to " + mavenZipFile.getAbsolutePath() + ")");
     } else {
       getLog().info("Moved plugin ZIP to '" + mavenZipFile + "'.");
     }

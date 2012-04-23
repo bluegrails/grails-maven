@@ -239,7 +239,12 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     if (syncVersion(metadata))
       metadata.persist();
 
-    final String fName = this.getBasedir() + File.separator + GrailsNameUtils.getNameFromScript( project.getArtifactId() ) + "GrailsPlugin.groovy";
+    String artifactId = project.getArtifactId();
+
+    if (artifactId.startsWith("grails-"))
+      artifactId = artifactId.substring("grails-".length());
+    
+    final String fName = this.getBasedir() + File.separator + GrailsNameUtils.getNameFromScript( artifactId ) + "GrailsPlugin.groovy";
     File gpFile = new File( fName );
     if ( gpFile.exists() ) {
       String text = null;
@@ -329,7 +334,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     lastArgs = args;
     lastTargetName = targetName;
 
-    getLog().info("Grails target: " + targetName + " raw args:" + args + " -------------->" + grailsVersion);
+    getLog().info("Grails target: " + targetName + " raw args:" + args + " (pom says Grails Version is " + grailsVersion + ")");
 
     // hold onto it as it holds the jLine.Terminal class we need to reset the terminal back to normal. We have to do it this
     // way as on Windows it fails as we hold a ref and the Grails class loader holds a ref, JLine tries to duplicate load the
@@ -399,15 +404,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
         configureBuildSettings(launcher, resolvedArtifacts, settingsField, rootLoader.loadClass("grails.util.BuildSettings"));
 
-        // Search for all Grails plugin dependencies and install
-        // any that haven't already been installed.
-        final Metadata metadata = Metadata.getInstance(new File(getBasedir(), "application.properties"));
-        if (syncVersion(metadata)) {
-          metadata.persist();
-        }
+        syncAppVersion();
 
         for (Artifact artifact : pluginArtifacts) {
-          installGrailsPlugin(artifact, metadata, launcher, settingsField, rootLoader.loadClass("grails.util.AbstractBuildSettings"));
+          installGrailsPlugin(artifact, launcher, settingsField, rootLoader.loadClass("grails.util.AbstractBuildSettings"));
         }
 
         // always update application.properties - version control systems are clever enough to know when a file hasn't actually changed its content
@@ -503,15 +503,15 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private boolean syncVersion(Metadata metadata) {
     boolean changed = false;
 
-    Object grailsVersion = metadata.get(APP_GRAILS_VERSION);
+    Object apGrailsVersion = metadata.get(APP_GRAILS_VERSION);
 
     Artifact grailsDependency = findGrailsDependency(project);
     if (grailsDependency != null) {
-      if (!grailsDependency.getVersion().equals(grailsVersion)) {
+      if (!grailsDependency.getVersion().equals(apGrailsVersion)) {
         metadata.put(APP_GRAILS_VERSION, grailsDependency.getVersion());
         changed = true;
       }
-    } else if (grailsVersion != null && !grailsVersion.equals(grailsVersion)) {
+    } else if (grailsVersion != null && !grailsVersion.equals(apGrailsVersion)) {
       metadata.put(APP_GRAILS_VERSION, grailsVersion);
       changed = true;
     }
@@ -845,8 +845,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * the plugin to the application's metadata.
    *
    * @param plugin   The plugin artifact to install.
-   * @param metadata The application metadata. An entry for the plugin
-   *                 is added to this if the installation is successful.
    * @param launcher The launcher instance that contains information about
    *                 the various project directories. In particular, this is where the
    *                 method gets the location of the project's "plugins" directory
@@ -858,7 +856,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    */
   private boolean installGrailsPlugin(
     final Artifact plugin,
-    final Metadata metadata,
     final GrailsLauncher launcher,
     Field settingsField,
     Class clazz) throws IOException, ArchiverException {
