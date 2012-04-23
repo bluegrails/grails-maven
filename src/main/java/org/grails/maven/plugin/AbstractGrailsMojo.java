@@ -236,8 +236,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
   protected void syncAppVersion() {
     final Metadata metadata = Metadata.getInstance(new File(getBasedir(), "application.properties"));
-    syncVersion(metadata);
-    metadata.persist();
+    if (syncVersion(metadata))
+      metadata.persist();
 
     final String fName = this.getBasedir() + File.separator + GrailsNameUtils.getNameFromScript( project.getArtifactId() ) + "GrailsPlugin.groovy";
     File gpFile = new File( fName );
@@ -402,8 +402,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         // Search for all Grails plugin dependencies and install
         // any that haven't already been installed.
         final Metadata metadata = Metadata.getInstance(new File(getBasedir(), "application.properties"));
-        syncGrailsVersion(metadata);
-        syncVersion(metadata);
+        if (syncVersion(metadata)) {
+          metadata.persist();
+        }
 
         for (Artifact artifact : pluginArtifacts) {
           installGrailsPlugin(artifact, metadata, launcher, settingsField, rootLoader.loadClass("grails.util.AbstractBuildSettings"));
@@ -413,7 +414,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         // so there is no reason to not write this every time. This will cause a failure if you don't manually change the application.properties file
         // when doing a release:prepare
 
-        metadata.persist();
+
 
 
         // If the command is running in non-interactive mode, we
@@ -499,22 +500,28 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     }
   }
 
-  private void syncVersion(Metadata metadata) {
-    metadata.put(APP_VERSION, project.getVersion());
-  }
+  private boolean syncVersion(Metadata metadata) {
+    boolean changed = false;
 
-
-  private boolean syncGrailsVersion(Metadata metadata) {
     Object grailsVersion = metadata.get(APP_GRAILS_VERSION);
 
     Artifact grailsDependency = findGrailsDependency(project);
     if (grailsDependency != null) {
       if (!grailsDependency.getVersion().equals(grailsVersion)) {
         metadata.put(APP_GRAILS_VERSION, grailsDependency.getVersion());
-        return true;
+        changed = true;
       }
+    } else if (grailsVersion != null && !grailsVersion.equals(grailsVersion)) {
+      metadata.put(APP_GRAILS_VERSION, grailsVersion);
+      changed = true;
     }
-    return false;
+
+    if (!project.getVersion().equals(metadata.get(APP_VERSION))) {
+      metadata.put(APP_VERSION, project.getVersion());
+      changed = true;
+    }
+
+    return changed;
   }
 
   private Artifact findGrailsDependency(MavenProject project) {
