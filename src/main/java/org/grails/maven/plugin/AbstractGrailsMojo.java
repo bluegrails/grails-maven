@@ -402,7 +402,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         Field settingsField = launcher.getClass().getDeclaredField("settings");
         settingsField.setAccessible(true);
 
-        configureBuildSettings(launcher, resolvedArtifacts, settingsField, rootLoader.loadClass("grails.util.BuildSettings"));
+        configureBuildSettings(launcher, resolvedArtifacts, settingsField, rootLoader.loadClass("grails.util.BuildSettings"), args);
 
         syncAppVersion();
 
@@ -768,12 +768,21 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * @param launcher The {@code GrailsLauncher} instance to be configured.
    */
   @SuppressWarnings("unchecked")
-  private Set<Artifact> configureBuildSettings(final GrailsLauncher launcher, Set<Artifact> resolvedArtifacts, Field settingsField, Class clazz) throws ProjectBuildingException, MojoExecutionException {
+  private Set<Artifact> configureBuildSettings(final GrailsLauncher launcher, Set<Artifact> resolvedArtifacts, Field settingsField, Class clazz, String args) throws ProjectBuildingException, MojoExecutionException {
     final String targetDir = this.project.getBuild().getDirectory();
     launcher.setDependenciesExternallyConfigured(true);
-    launcher.setCompileDependencies(artifactsToFiles(this.project.getCompileArtifacts()));
+
+    // allow plugins that are being developed with fake api implementations to include the test artifacts in the runtime
+    if (args.contains("--run-with-test-dependencies")) {
+      launcher.setCompileDependencies(artifactsToFiles(this.project.getTestArtifacts()));
+      launcher.setRuntimeDependencies(artifactsToFiles(this.project.getTestArtifacts()));
+    } else {
+      launcher.setCompileDependencies(artifactsToFiles(this.project.getCompileArtifacts()));
+      launcher.setRuntimeDependencies(artifactsToFiles(this.project.getRuntimeArtifacts()));
+    }
+
     launcher.setTestDependencies(artifactsToFiles(this.project.getTestArtifacts()));
-    launcher.setRuntimeDependencies(artifactsToFiles(this.project.getRuntimeArtifacts()));
+
     launcher.setProjectWorkDir(new File(targetDir));
     launcher.setClassesDir(new File(targetDir, "classes"));
     launcher.setTestClassesDir(new File(targetDir, "test-classes"));
