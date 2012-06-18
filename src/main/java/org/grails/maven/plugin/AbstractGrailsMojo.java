@@ -773,7 +773,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     launcher.setDependenciesExternallyConfigured(true);
 
     // allow plugins that are being developed with fake api implementations to include the test artifacts in the runtime
-    if (args.contains("--run-with-test-dependencies")) {
+    if (args != null && args.contains("--run-with-test-dependencies")) {
       launcher.setCompileDependencies(artifactsToFiles(this.project.getTestArtifacts()));
       launcher.setRuntimeDependencies(artifactsToFiles(this.project.getTestArtifacts()));
     } else {
