@@ -110,6 +110,10 @@
           <artifactId>jline</artifactId>
         </exclusion>
         <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>javax.servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
           <groupId>org.codehaus.groovy</groupId>
           <artifactId>groovy-all</artifactId>
         </exclusion>
@@ -132,6 +136,10 @@
         <exclusion>
           <groupId>org.grails</groupId>
           <artifactId>grails-plugin-log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>javax.servlet-api</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -158,6 +166,10 @@ POM for a Grails project. -->
       <scope>runtime</scope>
       <exclusions>
         <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>javax.servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
           <groupId>org.grails</groupId>
           <artifactId>grails-plugin-log4j</artifactId>
         </exclusion>
@@ -169,7 +181,11 @@ POM for a Grails project. -->
       <version>${grails-maven-archetype.version}</version>
       <scope>runtime</scope>
       <exclusions>
-          <exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>javax.servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-all</artifactId>
           </exclusion>
