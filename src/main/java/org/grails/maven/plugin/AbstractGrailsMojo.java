@@ -193,7 +193,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
   private String grailsVersion;
 
-
   /**
    * Returns the configured base directory for this execution of the plugin.
    *
@@ -774,14 +773,17 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
     // allow plugins that are being developed with fake api implementations to include the test artifacts in the runtime
     if (args != null && args.contains("--run-with-test-dependencies")) {
-      launcher.setCompileDependencies(artifactsToFiles(this.project.getTestArtifacts()));
-      launcher.setRuntimeDependencies(artifactsToFiles(this.project.getTestArtifacts()));
+      List<File> artifacts = artifactsToFiles(filterArtifacts(resolvedArtifacts, "compile", "runtime", "test"));
+      launcher.setCompileDependencies(artifacts);
+      launcher.setRuntimeDependencies(artifacts);
+      launcher.setTestDependencies(artifacts);
     } else {
-      launcher.setCompileDependencies(artifactsToFiles(this.project.getCompileArtifacts()));
-      launcher.setRuntimeDependencies(artifactsToFiles(this.project.getRuntimeArtifacts()));
+      // getCompileArtifacts, getRuntimeArtifacts and getTestArticats on the project are not reliable
+      launcher.setCompileDependencies(artifactsToFiles(filterArtifacts(resolvedArtifacts, "compile")));
+      launcher.setRuntimeDependencies(artifactsToFiles(filterArtifacts(resolvedArtifacts, "compile", "runtime")));
+      launcher.setTestDependencies(artifactsToFiles(filterArtifacts(resolvedArtifacts, "compile", "runtime", "test")));
     }
 
-    launcher.setTestDependencies(artifactsToFiles(this.project.getTestArtifacts()));
 
     launcher.setProjectWorkDir(new File(targetDir));
     launcher.setClassesDir(new File(targetDir, "classes"));
@@ -812,6 +814,18 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     }
 
     return resolvedArtifacts;
+  }
+
+  private Set<Artifact> filterArtifacts(Set<Artifact> resolvedArtifacts, String... scopes) {
+    HashSet<Artifact> artifacts = new HashSet<Artifact>();
+    List<String> checkScopes = Arrays.asList(scopes);
+
+    for(Artifact artifact : resolvedArtifacts) {
+      if (checkScopes.contains(artifact.getScope()))
+        artifacts.add(artifact);
+    }
+
+    return artifacts;
   }
 
 
