@@ -401,9 +401,15 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
           System.setProperty("grails.console.enable.interactive", "false");
       }
 
+      // see if log4j is there and if so, initialize it
       try {
         Class cls = rootLoader.loadClass("org.springframework.util.Log4jConfigurer");
         invokeStaticMethod(cls, "initLogging", new Object[]{"classpath:grails-maven/log4j.properties"});
+      } catch (Exception ex) {
+        getLog().info("No log4j available");
+      }
+
+      try {
         final GrailsLauncher launcher = new GrailsLauncher(rootLoader, grailsHomePath, basedir.getAbsolutePath());
         launcher.setPlainOutput(true);
 
@@ -623,11 +629,12 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     */
     resolvedArtifacts.addAll(resolveFromTree());
 
+    resolvedArtifacts.addAll(getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterDependencies(pluginProject.getDependencies(), Arrays.asList("org.grails")))));
+//
 //    for(Artifact a : resolvedArtifacts) {
 //      System.out.println("project artifact: " + a.toString());
 //    }
 
-    resolvedArtifacts.addAll(getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterDependencies(pluginProject.getDependencies(), Arrays.asList("org.grails")))));
 
     return resolvedArtifacts;
   }
@@ -641,7 +648,23 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         artifactMetadataSource, artifactCollector).getRootNode().accept(new DependencyNodeVisitor() {
         @Override
         public boolean visit(DependencyNode dependencyNode) {
-          resolvedArtifacts.add(dependencyNode.getArtifact());
+          Artifact artifact = dependencyNode.getArtifact();
+
+          if (dependencyNode.getState() != DependencyNode.INCLUDED)
+            return true;
+
+          if (artifact.getArtifactId().equals(project.getArtifactId()) && artifact.getGroupId().equals(project.getGroupId()))
+            return true;
+
+          try {
+            artifactResolver.resolve(artifact, remoteRepositories, localRepository);
+          } catch (ArtifactResolutionException e) {
+            throw new RuntimeException(e);
+          } catch (ArtifactNotFoundException e) {
+            throw new RuntimeException(e);
+          }
+
+          resolvedArtifacts.add(artifact);
           return true;
         }
 
@@ -680,7 +703,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
       for (Artifact resolvedArtifact : resolvedArtifacts) {
         final File file = resolvedArtifact.getFile();
+//        System.out.println("artifact " + resolvedArtifact.toString());
         if (file != null) {
+//          System.out.println("adding " + file.getAbsolutePath());
           classpath.add(file.toURI().toURL());
         }
       }
