@@ -27,7 +27,6 @@ import java.net.URL;
 import java.util.*;
 
 import groovy.lang.GString;
-import jline.Terminal;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
@@ -761,6 +760,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     return getResolvedArtifactsFromUnresolvedDependencies(unresolvedDependencies, "com.bluetrainsoftware.bluegrails", "maven-project");
   }
 
+
+  private boolean logDependencies = false;
+
   /**
    * Configures the launcher for execution.
    *
@@ -779,9 +781,13 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       launcher.setTestDependencies(artifacts);
     } else {
       // getCompileArtifacts, getRuntimeArtifacts and getTestArticats on the project are not reliable
+      logDependencies = "true".equals(System.getProperty("grails.maven.dependencies.compile"));
       launcher.setCompileDependencies(artifactsToFiles(filterArtifacts(resolvedArtifacts, "compile")));
+      logDependencies = "true".equals(System.getProperty("grails.maven.dependencies.runtime"));
       launcher.setRuntimeDependencies(artifactsToFiles(filterArtifacts(resolvedArtifacts, "compile", "runtime")));
+      logDependencies = "true".equals(System.getProperty("grails.maven.dependencies.test"));
       launcher.setTestDependencies(artifactsToFiles(filterArtifacts(resolvedArtifacts, "compile", "runtime", "test")));
+      logDependencies = false;
     }
 
 
@@ -791,7 +797,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     launcher.setResourcesDir(new File(targetDir, "resources"));
     launcher.setProjectPluginsDir(this.pluginsDir);
 
+    logDependencies = "true".equals(System.getProperty("grails.maven.dependencies.build"));
     List<File> files = artifactsToFiles(resolvedArtifacts);
+    logDependencies = false;
 
     launcher.setBuildDependencies(files);
 
@@ -940,9 +948,13 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    */
   private List<File> artifactsToFiles(final Collection<Artifact> artifacts) {
     final List<File> files = new ArrayList<File>(artifacts.size());
+    StringBuilder sb = new StringBuilder();
     for (Artifact artifact : artifacts) {
+      sb.append("\natof " + artifact.getFile().getAbsolutePath());
       files.add(artifact.getFile());
     }
+
+    if (logDependencies) getLog().info(sb.toString());
 
     return files;
   }
