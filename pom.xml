@@ -193,6 +193,14 @@ POM for a Grails project. -->
           <groupId>org.grails</groupId>
           <artifactId>grails-plugin-log4j</artifactId>
         </exclusion>
+        <!--<exclusion>-->
+          <!--<groupId>org.grails</groupId>-->
+          <!--<artifactId>grails-test</artifactId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+          <!--<groupId>org.grails</groupId>-->
+          <!--<artifactId>grails-plugin-testing</artifactId>-->
+        <!--</exclusion>-->
       </exclusions>
     </dependency>
 
@@ -224,6 +232,18 @@ POM for a Grails project. -->
       <groupId>org.codehaus.plexus</groupId>
       <artifactId>plexus-utils</artifactId>
       <version>${plexus-utils.version}</version>
+    </dependency>
+
+    <!-- supporting broken dependency model -->
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-artifact</artifactId>
+      <version>2.0.9</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-dependency-tree</artifactId>
+      <version>1.2</version>
     </dependency>
 
     <dependency>

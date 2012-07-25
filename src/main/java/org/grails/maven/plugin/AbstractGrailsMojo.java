@@ -42,6 +42,10 @@ import org.apache.maven.project.ProjectBuildingException;
 import org.apache.maven.project.artifact.MavenMetadataSource;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
+import org.apache.maven.shared.dependency.tree.DependencyNode;
+import org.apache.maven.shared.dependency.tree.DependencyTreeBuilder;
+import org.apache.maven.shared.dependency.tree.DependencyTreeBuilderException;
+import org.apache.maven.shared.dependency.tree.traversal.DependencyNodeVisitor;
 import org.codehaus.plexus.archiver.ArchiverException;
 import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
 import org.codehaus.plexus.logging.Logger;
@@ -139,11 +143,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   /**
    * @component
    */
-  private ArtifactCollector artifactCollector;
-
-  /**
-   * @component
-   */
   private ArtifactMetadataSource artifactMetadataSource;
 
   /**
@@ -152,7 +151,23 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * @readonly
    */
   private ArtifactRepository localRepository;
+  /**
+   * The artifact collector to use.
+   *
+   * @component
+   * @required
+   * @readonly
+   */
+  private ArtifactCollector artifactCollector;
 
+  /**
+   * The dependency tree builder to use.
+   *
+   * @component
+   * @required
+   * @readonly
+   */
+  private DependencyTreeBuilder dependencyTreeBuilder;
   /**
    * @parameter expression="${project.remoteArtifactRepositories}"
    * @required
@@ -589,7 +604,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   }
 
   private Set<Artifact> collectAllProjectArtifacts() throws MojoExecutionException {
-    final List<Dependency> unresolvedDependencies = new ArrayList<Dependency>();
+    final Set<Artifact> resolvedArtifacts = new HashSet<Artifact>();
 
     /*
     * Get the Grails dependencies from the plugin's POM file first.
@@ -606,14 +621,43 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     * of unresolved dependencies.  This is done so they can all be resolved at the same time so
     * that we get the benefit of Maven's conflict resolution.
     */
-    unresolvedDependencies.addAll(this.project.getDependencies());
+    resolvedArtifacts.addAll(resolveFromTree());
 
-    unresolvedDependencies.addAll(replaceVersion(filterDependencies(pluginProject.getDependencies(), Arrays.asList("org.grails"))));
+//    for(Artifact a : resolvedArtifacts) {
+//      System.out.println("project artifact: " + a.toString());
+//    }
 
-    return getResolvedArtifactsFromUnresolvedDependencies(unresolvedDependencies);
+    resolvedArtifacts.addAll(getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterDependencies(pluginProject.getDependencies(), Arrays.asList("org.grails")))));
+
+    return resolvedArtifacts;
   }
 
-  private Collection<Dependency> replaceVersion(List<Dependency> dependencies) {
+  private Set<Artifact> resolveFromTree() {
+    final Set<Artifact> resolvedArtifacts = new HashSet<Artifact>();
+
+    try {
+      // we have to do this because Aether does not work.
+      dependencyTreeBuilder.buildDependencyTree(project, localRepository, artifactFactory,
+        artifactMetadataSource, artifactCollector).getRootNode().accept(new DependencyNodeVisitor() {
+        @Override
+        public boolean visit(DependencyNode dependencyNode) {
+          resolvedArtifacts.add(dependencyNode.getArtifact());
+          return true;
+        }
+
+        @Override
+        public boolean endVisit(DependencyNode dependencyNode) {
+          return true;
+        }
+      });
+    } catch (DependencyTreeBuilderException e) {
+      throw new RuntimeException(e);
+    }
+
+    return resolvedArtifacts;
+  }
+
+  private List<Dependency> replaceVersion(List<Dependency> dependencies) {
     if (grailsVersion != null) {
       for(Dependency d : dependencies) {
         if ("org.grails".equals(d.getGroupId()) && !grailsVersion.equals(d.getVersion()) && grailsVersion.charAt(0) == d.getVersion().charAt(0)) {
@@ -730,7 +774,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
   Set<Artifact> getResolvedArtifactsFromUnresolvedDependencies(List<Dependency> unresolvedDependencies, String groupId, String artifactId) throws MojoExecutionException {
     final Set<Artifact> resolvedArtifacts = new HashSet<Artifact>();
-    Artifact mojoArtifact = this.artifactFactory.createBuildArtifact(groupId, artifactId, "1", "pom");
+    Artifact mojoArtifact = this.artifactFactory.createBuildArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion(), "pom");
 
     /*
     * Resolve each artifact.  This will get all transitive artifacts AND eliminate conflicts.
@@ -742,9 +786,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
     try {
       unresolvedArtifacts = MavenMetadataSource.createArtifacts(this.artifactFactory, unresolvedDependencies, null, null, null);
+//      for (Artifact artifact : unresolvedArtifacts) {
+//        System.out.println("unresolved " + artifact.toString());
+//      }
 
-      resolvedArtifacts.addAll(artifactResolver.resolveTransitively(unresolvedArtifacts, mojoArtifact,
-        remoteRepositories, localRepository, artifactMetadataSource).getArtifacts());
+      ArtifactResolutionResult artifacts = artifactResolver.resolveTransitively(unresolvedArtifacts, project.getArtifact(),
+        remoteRepositories, localRepository, artifactMetadataSource);
+      resolvedArtifacts.addAll(artifacts.getArtifacts());
+
     } catch (Exception e) {
       throw new MojoExecutionException("Unable to complete configuring the build settings", e);
     }
