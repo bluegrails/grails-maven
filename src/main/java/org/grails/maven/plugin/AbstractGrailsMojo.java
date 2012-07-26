@@ -302,6 +302,65 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   // we are getting a situation where the same goal is running twice - two compiles, two test apps. This is a hack fix until the real cause is discovered.
   private static String lastTargetName;
   private static String lastArgs;
+  private static boolean once = false;
+  private static Set<Artifact> resolvedArtifacts;
+  private static Set<Artifact> pluginArtifacts;
+  private static List<File> pluginDirectories = new ArrayList<File>();
+  private static URL[] classpath;
+  private static String grailsHomePath;
+
+  // we only need to do these once as they don't change
+  private void doOnce() throws MojoExecutionException {
+    once = true;
+
+    // hold onto it as it holds the jLine.Terminal class we need to reset the terminal back to normal. We have to do it this
+    // way as on Windows it fails as we hold a ref and the Grails class loader holds a ref, JLine tries to duplicate load the
+    // Windows DLL.
+    initializeJline();
+
+    configureMavenProxy();
+
+    resolvedArtifacts = collectAllProjectArtifacts();
+
+    /*
+    * Remove any Grails plugins that may be in the resolved artifact set.  This is because we
+    * do not need them on the classpath, as they will be handled later on by a separate call to
+    * "install" them.
+    */
+    pluginArtifacts = removePluginArtifacts(resolvedArtifacts);
+
+    for(Artifact artifact : pluginArtifacts)
+      pluginDirectories.add(getPluginDirAndInstallIfNecessary(artifact));
+
+    classpath = generateGrailsExecutionClasspath(resolvedArtifacts);
+
+    grailsHomePath = (grailsHome != null) ? grailsHome.getAbsolutePath() : null;
+
+    if (isWindows()) { // force console and interactive on to get around _GrailsRun.groovy windows bug where attaches to grailsConsole.reader.add...
+      System.setProperty("grails.console.enable.terminal", "true");
+      System.setProperty("grails.console.enable.interactive", "true");
+    } else {
+      if (System.getProperty("grails.console.enable.terminal") == null)
+        System.setProperty("grails.console.enable.terminal", "true");
+      if (System.getProperty("grails.console.enable.interactive") == null)
+        System.setProperty("grails.console.enable.interactive", "true");
+    }
+
+    // override the servlet factory if it is specified
+    if (this.servletServerFactory != null) {
+      System.setProperty("grails.server.factory", this.servletServerFactory);
+    }
+
+    // see if we are using logback and not log4j
+    final String logbackFilename = this.getBasedir() + "/logback.xml";
+
+    if (new File(logbackFilename).exists()) {
+      getLog().info("Found logback configuration, setting logback.xml to " + logbackFilename);
+
+      System.setProperty("logback.configurationFile", logbackFilename);
+    }
+
+  }
 
   /**
    * Executes the requested Grails target.  The "targetName" must match a known
@@ -347,59 +406,16 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     lastArgs = args;
     lastTargetName = targetName;
 
-    getLog().info("Grails target: " + targetName + " raw args:" + args + " (pom says Grails Version is " + grailsVersion + ")");
+    if (!once)
+      doOnce();
 
-    // hold onto it as it holds the jLine.Terminal class we need to reset the terminal back to normal. We have to do it this
-    // way as on Windows it fails as we hold a ref and the Grails class loader holds a ref, JLine tries to duplicate load the
-    // Windows DLL.
-    initializeJline();
+    getLog().info("Grails target: " + targetName + " raw args:" + args + " (pom says Grails Version is " + grailsVersion + ")");
 
     InputStream currentIn = System.in;
     PrintStream currentOutput = System.out;
 
-    // override the servlet factory if it is specified
-    if (this.servletServerFactory != null) {
-      System.setProperty("grails.server.factory", this.servletServerFactory);
-    }
-
-    // see if we are using logback and not log4j
-    final String logbackFilename = this.getBasedir() + "/logback.xml";
-
-    if (new File(logbackFilename).exists()) {
-      getLog().info("Found logback configuration, setting logback.xml to " + logbackFilename);
-
-      System.setProperty("logback.configurationFile", logbackFilename);
-    }
-
-
     try {
-      configureMavenProxy();
-
-      // we only need to do this ONCE
-      final Set<Artifact> resolvedArtifacts = collectAllProjectArtifacts();
-
-      /*
-      * Remove any Grails plugins that may be in the resolved artifact set.  This is because we
-      * do not need them on the classpath, as they will be handled later on by a separate call to
-      * "install" them.
-      */
-      final Set<Artifact> pluginArtifacts = removePluginArtifacts(resolvedArtifacts);
-
-      final URL[] classpath = generateGrailsExecutionClasspath(resolvedArtifacts);
-
-      final String grailsHomePath = (grailsHome != null) ? grailsHome.getAbsolutePath() : null;
       RootLoader rootLoader = new RootLoader(classpath, jlineClassloaderParent);
-
-
-      if (isWindows()) { // force console and interactive on to get around _GrailsRun.groovy windows bug where attaches to grailsConsole.reader.add...
-        System.setProperty("grails.console.enable.terminal", "true");
-        System.setProperty("grails.console.enable.interactive", "true");
-      } else {
-        if (System.getProperty("grails.console.enable.terminal") == null)
-          System.setProperty("grails.console.enable.terminal", "false");
-        if (System.getProperty("grails.console.enable.interactive") == null)
-          System.setProperty("grails.console.enable.interactive", "false");
-      }
 
       // see if log4j is there and if so, initialize it
       try {
@@ -425,16 +441,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
         syncAppVersion();
 
-        for (Artifact artifact : pluginArtifacts) {
-          installGrailsPlugin(artifact, launcher, settingsField, rootLoader.loadClass("grails.util.AbstractBuildSettings"));
-        }
-
-        // always update application.properties - version control systems are clever enough to know when a file hasn't actually changed its content
-        // so there is no reason to not write this every time. This will cause a failure if you don't manually change the application.properties file
-        // when doing a release:prepare
-
-
-
+        installGrailsPlugins(pluginDirectories, launcher, settingsField, rootLoader.loadClass("grails.util.AbstractBuildSettings"));
 
         // If the command is running in non-interactive mode, we
         // need to pass on the relevant argument.
@@ -942,30 +949,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     return targetDir;
   }
 
-
-  /**
-   * Installs a Grails plugin into the current project if it isn't
-   * already installed. It works by simply unpacking the plugin
-   * artifact (a ZIP file) into the appropriate location and adding
-   * the plugin to the application's metadata.
-   *
-   * @param plugin   The plugin artifact to install.
-   * @param launcher The launcher instance that contains information about
-   *                 the various project directories. In particular, this is where the
-   *                 method gets the location of the project's "plugins" directory
-   *                 from.
-   * @return <code>true</code> if the plugin is installed and the
-   *         metadata updated, otherwise <code>false</code>.
-   * @throws IOException
-   * @throws ArchiverException
-   */
-  private boolean installGrailsPlugin(
-    final Artifact plugin,
-    final GrailsLauncher launcher,
-    Field settingsField,
-    Class clazz) throws IOException, ArchiverException {
-
-
+  private File getPluginDirAndInstallIfNecessary(final Artifact plugin) throws MojoExecutionException {
     File targetDir = getPluginTargetDir(plugin);
 
     String pluginName = getPluginName(plugin);
@@ -988,26 +972,54 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       unzipper.setSourceFile(plugin.getFile());
       unzipper.setDestDirectory(targetDir);
       unzipper.setOverwrite(true);
-      unzipper.extract();
+      try {
+        unzipper.extract();
+      } catch (ArchiverException e) {
+        throw new MojoExecutionException("Unable to extract zip", e);
+      } catch (IOException e) {
+        throw new MojoExecutionException("Unable to extract zip", e);
+      }
     } else {
       getLog().info(String.format("Plugin %s:%s already installed (%s)", pluginName, pluginVersion, targetDir.getAbsolutePath()));
     }
 
-    // Now add it to the application metadata.
-//      getLog().debug("Updating project metadata");
-//      metadata.setProperty(String.format(GRAILS_PLUGIN_NAME_FORMAT, plugin.getGroupId(), pluginName), pluginVersion);
-//      metadata.setProperty("plugins." + pluginName, pluginVersion);
+    return targetDir;
+  }
 
+
+  /**
+   * Installs a Grails plugin into the current project if it isn't
+   * already installed. It works by simply unpacking the plugin
+   * artifact (a ZIP file) into the appropriate location and adding
+   * the plugin to the application's metadata.
+   *
+   * @param plugins   The plugin artifact to install.
+   * @param launcher The launcher instance that contains information about
+   *                 the various project directories. In particular, this is where the
+   *                 method gets the location of the project's "plugins" directory
+   *                 from.
+   * @return <code>true</code> if the plugin is installed and the
+   *         metadata updated, otherwise <code>false</code>.
+   * @throws IOException
+   * @throws ArchiverException
+   */
+  private boolean installGrailsPlugins(
+    List<File> plugins,
+    final GrailsLauncher launcher,
+    Field settingsField,
+    Class clazz) throws MojoExecutionException {
 
     Object settings = null;
     try {
       settings = settingsField.get(launcher);
 
       Method m = clazz.getDeclaredMethod("addPluginDirectory", new Class[]{File.class, boolean.class});
-      m.invoke(settings, targetDir, true);
+
+      for(File targetDir : plugins)
+        m.invoke(settings, targetDir, true);
 
     } catch (Exception e) {
-      getLog().error("Unable to install plugin " + pluginName, e);
+      throw new MojoExecutionException("Unable to install plugins", e);
     }
 
     return false;
