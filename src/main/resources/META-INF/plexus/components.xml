@@ -43,6 +43,19 @@
     </component>
 
     <component>
+      <role>org.apache.maven.artifact.handler.ArtifactHandler</role>
+      <role-hint>grails-binary-plugin</role-hint>
+      <implementation>org.apache.maven.artifact.handler.DefaultArtifactHandler</implementation>
+      <configuration>
+        <extension>jar</extension>
+        <type>grails-binary-plugin</type>
+        <packaging>grails-binary-plugin</packaging>
+        <language>java</language>
+        <addedToClasspath>true</addedToClasspath>
+      </configuration>
+    </component>
+
+    <component>
       <role>org.apache.maven.lifecycle.mapping.LifecycleMapping</role>
       <role-hint>grails-app</role-hint>
       <implementation>org.apache.maven.lifecycle.mapping.DefaultLifecycleMapping</implementation>
@@ -107,5 +120,39 @@
         </lifecycles>
       </configuration>
     </component>
+
+    <component>
+      <role>org.apache.maven.lifecycle.mapping.LifecycleMapping</role>
+      <role-hint>grails-binary-plugin</role-hint>
+      <implementation>org.apache.maven.lifecycle.mapping.DefaultLifecycleMapping</implementation>
+      <configuration>
+        <lifecycles>
+          <lifecycle>
+            <id>default</id>
+            <phases>
+              <validate>com.bluetrainsoftware.bluegrails:grails-maven-plugin:validate-plugin</validate>
+              <initialize>com.bluetrainsoftware.bluegrails:grails-maven-plugin:init-plugin</initialize>
+              <generate-sources>com.bluetrainsoftware.bluegrails:grails-maven-plugin:config-directories</generate-sources>
+              <compile>com.bluetrainsoftware.bluegrails:grails-maven-plugin:maven-compile</compile>
+              <test>com.bluetrainsoftware.bluegrails:grails-maven-plugin:maven-test</test>
+              <package>com.bluetrainsoftware.bluegrails:grails-maven-plugin:package-binary-plugin</package>
+              <integration-test>com.bluetrainsoftware.bluegrails:grails-maven-plugin:maven-functional-test</integration-test>
+              <install>org.apache.maven.plugins:maven-install-plugin:install</install>
+              <deploy>org.apache.maven.plugins:maven-deploy-plugin:deploy</deploy>
+            </phases>
+          </lifecycle>
+          <lifecycle>
+            <id>clean</id>
+            <phases>
+              <clean>
+                org.apache.maven.plugins:maven-clean-plugin:clean,
+                com.bluetrainsoftware.bluegrails:grails-maven-plugin:clean
+              </clean>
+            </phases>
+          </lifecycle>
+        </lifecycles>
+      </configuration>
+    </component>
+
   </components>
 </component-set>

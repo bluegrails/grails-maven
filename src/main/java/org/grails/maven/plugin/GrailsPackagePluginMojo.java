@@ -25,7 +25,7 @@ import java.io.File;
 /**
  * Packages the Grails plugin.
  *
- * @author <a href="mailto:aheritier@gmail.com">Arnaud HERITIER</a>
+ * @author <a href="mailto:aheritier@gmail.com">Arnaud HERITIER</a>, Richard Vowles
  * @version $Id$
  * @description Packages the Grails plugin.
  * @goal package-plugin
@@ -59,6 +59,7 @@ public class GrailsPackagePluginMojo extends AbstractGrailsMojo {
 
     // First package the plugin using the Grails script.
     runGrails("PackagePlugin");
+//    runGrails("PackagePlugin", "--binary");
 
     // Now move the ZIP from the project directory to the build
     // output directory.
@@ -78,6 +79,7 @@ public class GrailsPackagePluginMojo extends AbstractGrailsMojo {
     // Attach the zip file to the "grails-plugin" artifact, otherwise
     // the "install" and "deploy" phases won't work.
     artifact.setFile(mavenZipFile);
+
     artifact.setArtifactHandler(artifactHandler);
   }
 }
