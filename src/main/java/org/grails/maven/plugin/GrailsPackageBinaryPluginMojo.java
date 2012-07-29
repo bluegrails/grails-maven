@@ -56,9 +56,9 @@ public class GrailsPackageBinaryPluginMojo extends AbstractGrailsMojo {
     File existingJarFile = new File(project.getBuild().getDirectory(), mavenFileName);
     existingJarFile.delete();
     if (!fileGeneratedByGrails.renameTo(existingJarFile)) {
-      throw new MojoExecutionException("Unable to copy the plugin ZIP to the target directory (" + fileGeneratedByGrails.getAbsolutePath() + " to " + existingJarFile.getAbsolutePath() + ")");
+      throw new MojoExecutionException("Unable to copy the plugin binary JAR to the target directory (" + fileGeneratedByGrails.getAbsolutePath() + " to " + existingJarFile.getAbsolutePath() + ")");
     } else {
-      getLog().info("Moved plugin ZIP to '" + existingJarFile + "'.");
+      getLog().info("Moved plugin binary JAR to '" + existingJarFile + "'.");
     }
 
 //
