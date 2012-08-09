@@ -19,6 +19,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.project.MavenProject;
 
 import java.io.File;
 
@@ -63,23 +64,32 @@ public class GrailsPackagePluginMojo extends AbstractGrailsMojo {
 
     // Now move the ZIP from the project directory to the build
     // output directory.
+    renameToSourcePackage(project, getBasedir(), getLog(), artifact, artifactHandler);
+  }
+
+  public static File renameToSourcePackage(MavenProject project, File baseDir, org.apache.maven.plugin.logging.Log log,
+                                           Artifact artifact, ArtifactHandler artifactHandler)
+    throws MojoExecutionException {
     String zipFileName = project.getArtifactId() + "-" + project.getVersion() + ".zip";
     if (!zipFileName.startsWith(PLUGIN_PREFIX)) zipFileName = PLUGIN_PREFIX + zipFileName;
 
-    File zipGeneratedByGrails = new File(getBasedir(), zipFileName);
+    File zipGeneratedByGrails = new File(baseDir, zipFileName);
 
     File mavenZipFile = new File(project.getBuild().getDirectory(), zipFileName);
     mavenZipFile.delete();
     if (!zipGeneratedByGrails.renameTo(mavenZipFile)) {
       throw new MojoExecutionException("Unable to copy the plugin ZIP to the target directory (" + zipGeneratedByGrails.getAbsolutePath() + " to " + mavenZipFile.getAbsolutePath() + ")");
     } else {
-      getLog().info("Moved plugin ZIP to '" + mavenZipFile + "'.");
+      log.info("Moved plugin ZIP to '" + mavenZipFile + "'.");
     }
 
-    // Attach the zip file to the "grails-plugin" artifact, otherwise
-    // the "install" and "deploy" phases won't work.
-    artifact.setFile(mavenZipFile);
+    if (artifact != null) {
+      // Attach the zip file to the "grails-plugin" artifact, otherwise
+      // the "install" and "deploy" phases won't work.
+      artifact.setFile(mavenZipFile);
+      artifact.setArtifactHandler(artifactHandler);
+    }
 
-    artifact.setArtifactHandler(artifactHandler);
+    return mavenZipFile;
   }
 }

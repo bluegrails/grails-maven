@@ -43,7 +43,7 @@ public class MvnWarMojo extends AbstractGrailsMojo {
    */
   public void execute() throws MojoExecutionException, MojoFailureException {
 
-    if (!"grails-plugin".equals(project.getPackaging()) && !"grails-binary-plugin".equalsIgnoreCase(project.getPackaging())) {
+    if (!"grails-plugin".equals(project.getPackaging()) && !"grails-plugin2".equalsIgnoreCase(project.getPackaging())) {
       Build build = project.getBuild();
       String warFileName = build.getFinalName() != null ? build.getFinalName() : project.getArtifactId() + "-" + project.getVersion();
       if (!warFileName.endsWith(".war")) {

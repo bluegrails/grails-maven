@@ -42,14 +42,17 @@
       </configuration>
     </component>
 
+      <!--
+       This kind of plugin will compile the binary form of the plugin first, and then make a classifier "plugin" attachment of the source plugin
+      -->
     <component>
       <role>org.apache.maven.artifact.handler.ArtifactHandler</role>
-      <role-hint>grails-binary-plugin</role-hint>
+      <role-hint>grails-plugin2</role-hint>
       <implementation>org.apache.maven.artifact.handler.DefaultArtifactHandler</implementation>
       <configuration>
         <extension>jar</extension>
-        <type>grails-binary-plugin</type>
-        <packaging>grails-binary-plugin</packaging>
+        <type>grails-plugin2</type>
+        <packaging>grails-plugin2</packaging>
         <language>java</language>
         <addedToClasspath>true</addedToClasspath>
       </configuration>
@@ -123,7 +126,7 @@
 
     <component>
       <role>org.apache.maven.lifecycle.mapping.LifecycleMapping</role>
-      <role-hint>grails-binary-plugin</role-hint>
+      <role-hint>grails-plugin2</role-hint>
       <implementation>org.apache.maven.lifecycle.mapping.DefaultLifecycleMapping</implementation>
       <configuration>
         <lifecycles>

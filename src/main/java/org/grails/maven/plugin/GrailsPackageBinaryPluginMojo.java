@@ -5,6 +5,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.project.MavenProjectHelper;
 
 import java.io.File;
 
@@ -32,9 +33,15 @@ public class GrailsPackageBinaryPluginMojo extends AbstractGrailsMojo {
   private Artifact artifact;
 
   /**
+   * @component
+   */
+
+  private MavenProjectHelper projectHelper;
+
+  /**
    * The artifact handler.
    *
-   * @parameter expression="${component.org.apache.maven.artifact.handler.ArtifactHandler#grails-plugin}"
+   * @parameter expression="${component.org.apache.maven.artifact.handler.ArtifactHandler#grails-plugin2}"
    * @required
    * @readonly
    */
@@ -45,7 +52,15 @@ public class GrailsPackageBinaryPluginMojo extends AbstractGrailsMojo {
 
     // First package the plugin using the Grails script.
     runGrails("PackagePlugin", "--binary");
+    renameJarToMavenExpectations();
 
+    runGrails("PackagePlugin"); // no binary, do a source distribution
+    File zipFile = GrailsPackagePluginMojo.renameToSourcePackage(project, getBasedir(), getLog(), null, null);
+
+    projectHelper.attachArtifact( project, "zip", "plugin", zipFile );
+  }
+
+  private void renameJarToMavenExpectations() throws MojoExecutionException {
     // Now move the JAR from the project directory to the build
     // output directory.
     final String mavenFileName = project.getArtifactId() + "-" + project.getVersion() + ".jar";
@@ -61,11 +76,7 @@ public class GrailsPackageBinaryPluginMojo extends AbstractGrailsMojo {
       getLog().info("Moved plugin binary JAR to '" + existingJarFile + "'.");
     }
 
-//
-//    // Attach the zip file to the "grails-plugin" artifact, otherwise
-//    // the "install" and "deploy" phases won't work.
-//    artifact.setFile(mavenZipFile);
-//
-//    artifact.setArtifactHandler(artifactHandler);
+    artifact.setFile(existingJarFile);
+    artifact.setArtifactHandler(artifactHandler);
   }
 }
