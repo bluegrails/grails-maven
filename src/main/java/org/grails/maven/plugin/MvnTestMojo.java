@@ -88,11 +88,14 @@ public class MvnTestMojo extends AbstractGrailsMojo {
 
 
     try {
+      env = "test";
       runGrails("TestApp", "--unit");
     } catch (MojoExecutionException me) {
       if (!testFailureIgnore) {
         throw me;
       }
+    } finally {
+      env = null;
     }
   }
 }

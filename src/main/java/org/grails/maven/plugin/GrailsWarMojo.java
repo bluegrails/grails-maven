@@ -32,6 +32,12 @@ import org.apache.maven.plugin.MojoFailureException;
 public class GrailsWarMojo extends AbstractGrailsMojo {
 
   public void execute() throws MojoExecutionException, MojoFailureException {
-    runGrails("War");
+    try {
+      env = "prod";
+      runGrails("War");
+    } finally {
+      env = null;
+    }
+
   }
 }

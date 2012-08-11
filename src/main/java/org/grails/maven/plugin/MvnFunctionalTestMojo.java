@@ -76,11 +76,15 @@ public class MvnFunctionalTestMojo extends AbstractGrailsMojo {
     // even if there are no integration tests, we want to do so as it starts the grails container and makes sure it wires.
 
     try {
+      env = "test";
       runGrails("TestApp", "--integration --functional");
     } catch (MojoExecutionException me) {
       if (!testFailureIgnore) {
         throw me;
       }
+    } finally {
+      env = null;
     }
+
   }
 }
