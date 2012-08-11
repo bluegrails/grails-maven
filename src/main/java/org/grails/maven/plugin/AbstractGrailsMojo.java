@@ -483,7 +483,12 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         // consuming the standard output after execution via Maven.
         args = (args != null) ? "--plain-output " + args : "--plain-output";
 
-        getLog().info("grails " + targetName.toLowerCase() + " " + args);
+        if (env == null)
+          System.clearProperty("grails.env");
+        else
+          System.setProperty("grails.env", env);
+
+        getLog().info("grails -Dgrails.env=" + (env==null?"dev":env) + " " + targetName.toLowerCase() + " " + args);
         final int retval = launcher.launch(targetName, args, env);
 
         if ("true".equals(System.getProperty("print.grails.settings")))
