@@ -16,10 +16,13 @@
 package org.grails.maven.plugin;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.maven.model.Build;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.project.MavenProjectHelper;
 
 /**
  * Creates a WAR archive for the project and puts it in the usual Maven
@@ -37,6 +40,12 @@ public class MvnWarMojo extends AbstractGrailsMojo {
   protected File warFile;
 
   /**
+   * @component
+   */
+
+  private MavenProjectHelper projectHelper;
+
+  /**
    * Executes the MvnWarMojo on the current project.
    *
    * @throws MojoExecutionException if an error occured while building the webapp
@@ -50,6 +59,8 @@ public class MvnWarMojo extends AbstractGrailsMojo {
         warFileName += ".war";
       }
       warFile = new File(build.getDirectory(), warFileName);
+
+      projectHelper.addResource(project, project.getBasedir().getAbsolutePath(), Arrays.asList("application.properties"), Collections.emptyList());
 
       try {
         env = "prod";

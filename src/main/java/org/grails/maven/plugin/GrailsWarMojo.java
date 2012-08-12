@@ -17,6 +17,10 @@ package org.grails.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.project.MavenProjectHelper;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Creates a WAR archive.
@@ -31,7 +35,16 @@ import org.apache.maven.plugin.MojoFailureException;
  */
 public class GrailsWarMojo extends AbstractGrailsMojo {
 
+  /**
+   * @component
+   */
+
+  private MavenProjectHelper projectHelper;
+
   public void execute() throws MojoExecutionException, MojoFailureException {
+
+    projectHelper.addResource(project, project.getBasedir().getAbsolutePath(), Arrays.asList("application.properties"), Collections.emptyList());
+
     try {
       env = "prod";
       runGrails("War");

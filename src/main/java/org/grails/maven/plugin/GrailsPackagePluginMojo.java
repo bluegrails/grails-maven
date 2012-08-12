@@ -20,8 +20,11 @@ import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.MavenProjectHelper;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Packages the Grails plugin.
@@ -55,8 +58,16 @@ public class GrailsPackagePluginMojo extends AbstractGrailsMojo {
    */
   protected ArtifactHandler artifactHandler;
 
+  /**
+   * @component
+   */
+
+  private MavenProjectHelper projectHelper;
+
   public void execute() throws MojoExecutionException, MojoFailureException {
     syncAppVersion();
+
+    projectHelper.addResource(project, project.getBasedir().getAbsolutePath(), Arrays.asList("application.properties", getGrailsPluginFileName()), Collections.emptyList());
 
     // First package the plugin using the Grails script.
     runGrails("PackagePlugin");

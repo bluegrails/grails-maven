@@ -248,6 +248,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     return new String( buffer );
   }
 
+  protected String getFullGrailsPluginName() {
+    return this.getBasedir() + File.separator + getGrailsPluginFileName();
+  }
+
+  protected String getGrailsPluginFileName() {
+    return GrailsNameUtils.getNameFromScript(project.getArtifactId()) + "GrailsPlugin.groovy";
+  }
+
   protected void syncAppVersion() {
     final Metadata metadata = Metadata.getInstance(new File(getBasedir(), "application.properties"));
     if (syncVersion(metadata))
@@ -258,7 +266,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     if (artifactId.startsWith("grails-"))
       artifactId = artifactId.substring("grails-".length());
 
-    final String fName = this.getBasedir() + File.separator + GrailsNameUtils.getNameFromScript( artifactId ) + "GrailsPlugin.groovy";
+    final String fName = getFullGrailsPluginName();
     File gpFile = new File( fName );
     if ( gpFile.exists() ) {
       String text = null;
@@ -297,7 +305,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
 
   private boolean isWindows() {
-    return System.getProperty("os.name").toLowerCase().indexOf("windows") != -1;
+    return System.getProperty("os.name").toLowerCase().contains("windows");
   }
 
   // we are getting a situation where the same goal is running twice - two compiles, two test apps. This is a hack fix until the real cause is discovered.
@@ -1151,7 +1159,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     if (artifact != null) {
       for (final Iterator<Artifact> iter = artifact.iterator(); iter.hasNext(); ) {
         final Artifact dep = iter.next();
-        if (dep.getType() != null && (dep.getType().equals("grails-plugin") || dep.getType().equals("zip"))) {
+        if (dep.getType() != null && (dep.getType().equals("grails-plugin") || dep.getType().equals("zip") || (dep.getType().equals("grails-plugin2") && "plugin".equals(dep.getClassifier())) )) {
           pluginArtifacts.add(dep);
 //          System.out.println("removing " + dep.toString());
           iter.remove();

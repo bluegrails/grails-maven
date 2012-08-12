@@ -8,6 +8,8 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProjectHelper;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Packages the binary Grails plugin.
@@ -49,6 +51,8 @@ public class GrailsPackageBinaryPluginMojo extends AbstractGrailsMojo {
 
   public void execute() throws MojoExecutionException, MojoFailureException {
     syncAppVersion();
+
+    projectHelper.addResource(project, project.getBasedir().getAbsolutePath(), Arrays.asList("application.properties", getGrailsPluginFileName()), Collections.emptyList());
 
     // First package the plugin using the Grails script.
     runGrails("PackagePlugin", "--binary");
