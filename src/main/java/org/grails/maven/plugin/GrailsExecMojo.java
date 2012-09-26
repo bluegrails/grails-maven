@@ -48,6 +48,13 @@ public class GrailsExecMojo extends AbstractGrailsMojo {
   private String args;
 
   public void execute() throws MojoExecutionException, MojoFailureException {
-    runGrails(GrailsNameUtils.getNameFromScript(command), args);
+    String nameFromScript = GrailsNameUtils.getNameFromScript(command);
+
+    if (nameFromScript.equalsIgnoreCase("testapp"))
+      env = "test";
+    if (nameFromScript.equalsIgnoreCase("war"))
+      env = "prod";
+
+    runGrails(nameFromScript, args);
   }
 }

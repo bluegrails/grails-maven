@@ -318,18 +318,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private static URL[] classpath;
   private static String grailsHomePath;
 
-  // we only need to do these once as they don't change
-  private void doOnce() throws MojoExecutionException {
-    once = true;
+  private void resolveClasspath() throws MojoExecutionException {
+    getLog().info("Resolving dependencies");
 
     resolvedArtifacts = collectAllProjectArtifacts();
-
-    // hold onto it as it holds the jLine.Terminal class we need to reset the terminal back to normal. We have to do it this
-    // way as on Windows it fails as we hold a ref and the Grails class loader holds a ref, JLine tries to duplicate load the
-    // Windows DLL.
-    initializeJline();
-
-    configureMavenProxy();
 
 
     /*
@@ -343,7 +335,20 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       pluginDirectories.add(getPluginDirAndInstallIfNecessary(artifact));
 
     classpath = generateGrailsExecutionClasspath(resolvedArtifacts);
+  }
 
+  // we only need to do these once as they don't change
+  private void doOnce() throws MojoExecutionException {
+    once = true;
+
+    // hold onto it as it holds the jLine.Terminal class we need to reset the terminal back to normal. We have to do it this
+    // way as on Windows it fails as we hold a ref and the Grails class loader holds a ref, JLine tries to duplicate load the
+    // Windows DLL.
+    initializeJline();
+
+    configureMavenProxy();
+
+    resolveClasspath();
 //    printClasspath("main", Arrays.asList(classpath));
 
     grailsHomePath = (grailsHome != null) ? grailsHome.getAbsolutePath() : null;
@@ -402,9 +407,15 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     try {
       if (jlineClassloaderParent == null) {
 
+        final List<Dependency> filteredDependencies = new ArrayList<Dependency>();
+        for (final Object dep : getPluginProject().getDependencies()) {
+          Dependency dependency = (Dependency)dep;
+          if (dependency.getGroupId().equals("jline"))
+            filteredDependencies.add(dependency);
+        }
+
         List<URL> jlineClasspath = generateExecutionClasspath(
-          getResolvedArtifactsFromUnresolvedDependencies(
-            filterDependencies(getPluginProject().getDependencies(), Arrays.asList("jline"))));
+          getResolvedArtifactsFromUnresolvedDependencies(filteredDependencies));
 
         jlineClassloaderParent = new URLClassLoader( jlineClasspath.toArray(new URL[jlineClasspath.size()]), ClassLoader.getSystemClassLoader());
         callJline("setupTerminal");
@@ -446,6 +457,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
     if (!once)
       doOnce();
+    else if (targetName.equals("War"))
+      resolveClasspath(); // we have to get rid of the test rubbish
 
     getLog().info("Grails target: " + targetName + " raw args:" + args + " (pom says Grails Version is " + grailsVersion + ")");
 
@@ -460,7 +473,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         Class cls = rootLoader.loadClass("org.springframework.util.Log4jConfigurer");
         invokeStaticMethod(cls, "initLogging", new Object[]{"classpath:grails-maven/log4j.properties"});
       } catch (Exception ex) {
-        getLog().info("No log4j available");
+        getLog().info("No log4j available, good!");
       }
 
       try {
@@ -683,7 +696,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       resolvedArtifacts.add(artifact);
     }
 
-    for( Artifact artifact : getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterDependencies(pluginProject.getDependencies(), Arrays.asList("org.grails")))) ) {
+    for( Artifact artifact : getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterGrailsDependencies(pluginProject.getDependencies()))) ) {
       if (artifact.getGroupId().equals("jline")) continue;
       resolvedArtifacts.add(artifact);
     }
@@ -838,6 +851,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     return this.projectBuilder.buildFromRepository(pluginArtifact, this.remoteRepositories, this.localRepository);
   }
 
+
   /**
    * Returns only the dependencies matching the supplied group ID value, filtering out
    * all others.
@@ -846,10 +860,20 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * @param groupIds     The group IDs of the requested dependencies.
    * @return The filtered list of dependencies.
    */
-  private List<Dependency> filterDependencies(final List<Dependency> dependencies, List<String> groupIds) {
+  private List<Dependency> filterGrailsDependencies(final List<Dependency> dependencies) {
     final List<Dependency> filteredDependencies = new ArrayList<Dependency>();
     for (final Dependency dependency : dependencies) {
-      if (groupIds.contains(dependency.getGroupId()) && !"grails-dependencies".equals(dependency.getArtifactId())) {
+      // don't include grails-dependencies ever, and don't include any dependency called test when building a war
+      boolean ignore = (dependency.getArtifactId().contains("test") && lastTargetName.equals("War")) ||
+                        (dependency.getGroupId().equals("org.grails") && "grails-dependencies".equals(dependency.getArtifactId())) ||
+                        dependency.getGroupId().equals("org.slf4j") ||
+                        dependency.getGroupId().equals("jline") ||
+        dependency.getGroupId().equals("com.sun") ||
+        (dependency.getGroupId().equals("junit") && lastTargetName.equals("War")) ||
+        (dependency.getGroupId().equals("xmlunit") && lastTargetName.equals("War"));
+
+      if (!ignore) {
+        System.out.println("Adding " + dependency.getGroupId() + " : " + dependency.getArtifactId());
         filteredDependencies.add(dependency);
       }
     }
@@ -866,14 +890,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     */
     final Set<Artifact> unresolvedArtifacts;
 
-//    for (Dependency d : unresolvedDependencies)
-//      System.out.println("dependency: " + d.toString());
+    for (Dependency d : unresolvedDependencies)
+      System.out.println("dependency: " + d.toString());
 
     try {
       unresolvedArtifacts = MavenMetadataSource.createArtifacts(this.artifactFactory, unresolvedDependencies, null, null, null);
-//      for (Artifact artifact : unresolvedArtifacts) {
-//        System.out.println("unresolved " + artifact.toString());
-//      }
+      for (Artifact artifact : unresolvedArtifacts) {
+        System.out.println("unresolved " + artifact.toString());
+      }
 
       ArtifactResolutionResult artifacts = artifactResolver.resolveTransitively(unresolvedArtifacts, project.getArtifact(),
         remoteRepositories, localRepository, artifactMetadataSource);
@@ -883,9 +907,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       throw new MojoExecutionException("Unable to complete configuring the build settings", e);
     }
 
-//    for (Artifact artifact : resolvedArtifacts) {
-//      System.out.println("matched " + artifact.toString());
-//    }
+    for (Artifact artifact : resolvedArtifacts) {
+      System.out.println("matched " + artifact.toString());
+    }
 
     return resolvedArtifacts;
   }
@@ -1003,8 +1027,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     String pluginName = getPluginName(plugin);
     final String pluginVersion = plugin.getVersion();
 
-    // Unpack the plugin if it hasn't already been.
-    if (!targetDir.exists()) {
+    // Unpack the plugin if it hasn't already been or if its a SNAPSHOT
+    if (!targetDir.exists() || plugin.getVersion().endsWith("-SNAPSHOT")) {
       // Ideally we need to now do two things (a) see if we are running JDK7
       // and (b) determine if -Dplugin.groupId.artifactId has been set - if this is so, we want to do a Files.createLink
       // to the directory specified by  the -D flag. We should probably also check if the targetDir is a link and
@@ -1088,7 +1112,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       files.add(artifact.getFile());
     }
 
-    if (logDependencies) getLog().info(sb.toString());
+    if (logDependencies)
+      getLog().info(sb.toString());
 
     return files;
   }
