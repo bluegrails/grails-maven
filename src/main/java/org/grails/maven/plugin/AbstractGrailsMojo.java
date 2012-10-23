@@ -311,10 +311,11 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   // we are getting a situation where the same goal is running twice - two compiles, two test apps. This is a hack fix until the real cause is discovered.
   private static String lastTargetName;
   private static String lastArgs;
-  private static boolean once = false;
+  private static String lastArtifactId;
+  private static String lastGroupId;
   private static Set<Artifact> resolvedArtifacts;
   private static Set<Artifact> pluginArtifacts;
-  private static List<File> pluginDirectories = new ArrayList<File>();
+  private static List<File> pluginDirectories;
   private static URL[] classpath;
   private static String grailsHomePath;
 
@@ -331,15 +332,25 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     */
     pluginArtifacts = removePluginArtifacts(resolvedArtifacts);
 
+    pluginDirectories = new ArrayList<File>();
+
     for(Artifact artifact : pluginArtifacts)
       pluginDirectories.add(getPluginDirAndInstallIfNecessary(artifact));
 
     classpath = generateGrailsExecutionClasspath(resolvedArtifacts);
+
+    System.gc();
+  }
+
+  private boolean alreadyLoaderClasspathForArtifact() {
+    return project.getArtifactId().equalsIgnoreCase(lastArtifactId) && project.getGroupId().equalsIgnoreCase(lastGroupId);
   }
 
   // we only need to do these once as they don't change
-  private void doOnce() throws MojoExecutionException {
-    once = true;
+  private void doOncePerArtifact() throws MojoExecutionException {
+    lastArtifactId = project.getArtifactId();
+    lastGroupId = project.getGroupId();
+
 
     // hold onto it as it holds the jLine.Terminal class we need to reset the terminal back to normal. We have to do it this
     // way as on Windows it fails as we hold a ref and the Grails class loader holds a ref, JLine tries to duplicate load the
@@ -455,8 +466,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     lastArgs = args;
     lastTargetName = targetName;
 
-    if (!once)
-      doOnce();
+    if (!alreadyLoaderClasspathForArtifact())
+      doOncePerArtifact();
     else if (targetName.equals("War"))
       resolveClasspath(); // we have to get rid of the test rubbish
 
@@ -857,7 +868,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * all others.
    *
    * @param dependencies A list of dependencies to be filtered.
-   * @param groupIds     The group IDs of the requested dependencies.
    * @return The filtered list of dependencies.
    */
   private List<Dependency> filterGrailsDependencies(final List<Dependency> dependencies) {
@@ -873,7 +883,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         (dependency.getGroupId().equals("xmlunit") && lastTargetName.equals("War"));
 
       if (!ignore) {
-        System.out.println("Adding " + dependency.getGroupId() + " : " + dependency.getArtifactId());
+//        System.out.println("Adding " + dependency.getGroupId() + " : " + dependency.getArtifactId());
         filteredDependencies.add(dependency);
       }
     }
@@ -890,14 +900,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     */
     final Set<Artifact> unresolvedArtifacts;
 
-    for (Dependency d : unresolvedDependencies)
-      System.out.println("dependency: " + d.toString());
+//    for (Dependency d : unresolvedDependencies)
+//      System.out.println("dependency: " + d.toString());
 
     try {
       unresolvedArtifacts = MavenMetadataSource.createArtifacts(this.artifactFactory, unresolvedDependencies, null, null, null);
-      for (Artifact artifact : unresolvedArtifacts) {
-        System.out.println("unresolved " + artifact.toString());
-      }
+//      for (Artifact artifact : unresolvedArtifacts) {
+//        System.out.println("unresolved " + artifact.toString());
+//      }
 
       ArtifactResolutionResult artifacts = artifactResolver.resolveTransitively(unresolvedArtifacts, project.getArtifact(),
         remoteRepositories, localRepository, artifactMetadataSource);
@@ -907,9 +917,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       throw new MojoExecutionException("Unable to complete configuring the build settings", e);
     }
 
-    for (Artifact artifact : resolvedArtifacts) {
-      System.out.println("matched " + artifact.toString());
-    }
+//    for (Artifact artifact : resolvedArtifacts) {
+//      System.out.println("matched " + artifact.toString());
+//    }
 
     return resolvedArtifacts;
   }
@@ -1027,8 +1037,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     String pluginName = getPluginName(plugin);
     final String pluginVersion = plugin.getVersion();
 
-    // Unpack the plugin if it hasn't already been or if its a SNAPSHOT
-    if (!targetDir.exists() || plugin.getVersion().endsWith("-SNAPSHOT")) {
+    if (plugin.getVersion().endsWith("-SNAPSHOT") && plugin.getFile().getAbsolutePath().endsWith("target" + File.separator + "classes")) { // multi module build
+
+      targetDir = plugin.getFile().getParentFile().getParentFile();
+      getLog().info(String.format("Plugin %s:%s is coming from a multi-module dependency (%s)", pluginName, pluginVersion, targetDir.getAbsolutePath()));
+
+    } else if (!targetDir.exists() || plugin.getVersion().endsWith("-SNAPSHOT")) {
+      // Unpack the plugin if it hasn't already been or if its a SNAPSHOT
+
       // Ideally we need to now do two things (a) see if we are running JDK7
       // and (b) determine if -Dplugin.groupId.artifactId has been set - if this is so, we want to do a Files.createLink
       // to the directory specified by  the -D flag. We should probably also check if the targetDir is a link and
