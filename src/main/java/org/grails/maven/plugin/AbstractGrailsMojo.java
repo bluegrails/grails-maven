@@ -520,7 +520,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         else
           System.setProperty("grails.env", env);
 
-        getLog().info("grails -Dgrails.env=" + (env==null?"dev":env) + " " + targetName.toLowerCase() + " " + args);
+        getLog().info("grails -Dgrails.env=" + (env==null?"dev":env) + " " + targetName + " " + args);
         final int retval = launcher.launch(targetName, args, env);
 
         if ("true".equals(System.getProperty("print.grails.settings")))
