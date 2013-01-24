@@ -1010,7 +1010,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     }
   }
 
-  private File getPluginTargetDir(Artifact plugin) {
+  private File getPluginTargetDirOverride(Artifact plugin) {
     String pluginLocationOverride = System.getProperty(plugin.getGroupId() + ":" + plugin.getArtifactId());
 
     File targetDir = null;
@@ -1022,28 +1022,43 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         targetDir = null;
       }
     }
+    return targetDir;
+  }
+
+  private File getPluginTargetDirCentral(Artifact plugin) {
+      return new File(this.centralPluginInstallDir, getPluginName(plugin) + "-" + plugin.getVersion());
+  }
+
+  private File getPluginTargetDir(Artifact plugin) {
+    File targetDir = getPluginTargetDirOverride(plugin);
 
     if (targetDir == null) {
       // The directory the plugin will be unzipped to.
-      targetDir = new File(this.centralPluginInstallDir, getPluginName(plugin) + "-" + plugin.getVersion());
+      targetDir = getPluginTargetDirCentral(plugin);
     }
 
     return targetDir;
   }
 
   private File getPluginDirAndInstallIfNecessary(final Artifact plugin) throws MojoExecutionException {
-    File targetDir = getPluginTargetDir(plugin);
+    boolean targetDirOverridden = true;
+    File targetDir = getPluginTargetDirOverride(plugin);
+    if (targetDir == null){
+        targetDirOverridden = false;
+        targetDir = getPluginTargetDirCentral(plugin);
+    }
 
     String pluginName = getPluginName(plugin);
     final String pluginVersion = plugin.getVersion();
+    boolean snapshot = pluginVersion.endsWith("-SNAPSHOT");
 
-    if (plugin.getVersion().endsWith("-SNAPSHOT") && plugin.getFile().getAbsolutePath().endsWith("target" + File.separator + "classes")) { // multi module build
+    if (snapshot && plugin.getFile().getAbsolutePath().endsWith("target" + File.separator + "classes")) { // multi module build
 
       targetDir = plugin.getFile().getParentFile().getParentFile();
       getLog().info(String.format("Plugin %s:%s is coming from a multi-module dependency (%s)", pluginName, pluginVersion, targetDir.getAbsolutePath()));
 
-    } else if (!targetDir.exists() || plugin.getVersion().endsWith("-SNAPSHOT")) {
-      // Unpack the plugin if it hasn't already been or if its a SNAPSHOT
+    } else if ( (!snapshot && !targetDir.exists()) || (snapshot && !targetDirOverridden)) {
+      // Unpack the plugin if it hasn't already been or if its a SNAPSHOT and not overridden by -Dflag
 
       // Ideally we need to now do two things (a) see if we are running JDK7
       // and (b) determine if -Dplugin.groupId.artifactId has been set - if this is so, we want to do a Files.createLink
@@ -1052,6 +1067,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       // know this has happened.
       // We wouldn't actually want this to be allowed when doing a release however.... So people should make sure they don't
       // specify them, they they'll be installed.
+
       getLog().info(String.format("Installing Plugin %s:%s into (%s)", pluginName, pluginVersion, targetDir.getAbsolutePath()));
       targetDir.mkdirs();
 
