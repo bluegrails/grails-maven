@@ -33,6 +33,7 @@ import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.*;
+import org.apache.maven.artifact.versioning.OverConstrainedVersionException;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
@@ -209,6 +210,11 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private String grailsVersion;
 
   /**
+   * @parameter expression="${run.useTransitives}"
+   */
+  private boolean useTransitives = true; // by default use Maven 2.x to resolve transitives
+
+  /**
    * Returns the configured base directory for this execution of the plugin.
    *
    * @return The base directory.
@@ -320,7 +326,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private static String grailsHomePath;
 
   private void resolveClasspath() throws MojoExecutionException {
-    getLog().info("Resolving dependencies");
+    getLog().info("Resolving dependencies" + (useTransitives?"":" - warning! we are not using transitive dependencies, only those directly in the pom.xml"));
 
     resolvedArtifacts = collectAllProjectArtifacts();
 
@@ -426,7 +432,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         }
 
         List<URL> jlineClasspath = generateExecutionClasspath(
-          getResolvedArtifactsFromUnresolvedDependencies(filteredDependencies));
+          getResolvedArtifactsFromUnresolvedDependencies(filteredDependencies, true));
 
         jlineClassloaderParent = new URLClassLoader( jlineClasspath.toArray(new URL[jlineClasspath.size()]), ClassLoader.getSystemClassLoader());
         callJline("setupTerminal");
@@ -702,20 +708,35 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     * that we get the benefit of Maven's conflict resolution.
     */
 
-    for( Artifact artifact : resolveFromTree() ) {
+    Set<Artifact> uncheckedArtifacts = useTransitives ? resolveFromTree() : getResolvedArtifactsFromUnresolvedDependencies(project.getDependencies(), false);
+    Map<String, Artifact> checklist = new HashMap<String, Artifact>();
+
+    for( Artifact artifact : uncheckedArtifacts ) {
       if (artifact.getGroupId().equals("jline")) continue;
-      resolvedArtifacts.add(artifact);
+//      resolvedArtifacts.add(artifact);
+      checklist.put(artifact.getGroupId() + ":" + artifact.getArtifactId(), artifact);
     }
 
-    for( Artifact artifact : getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterGrailsDependencies(pluginProject.getDependencies()))) ) {
+    for( Artifact artifact : getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterGrailsDependencies(pluginProject.getDependencies())), true) ) {
       if (artifact.getGroupId().equals("jline")) continue;
-      resolvedArtifacts.add(artifact);
+
+      Artifact existing = checklist.get(artifact.getGroupId() + ":" + artifact.getArtifactId());
+
+
+      try {
+        if (existing == null || artifact.getSelectedVersion().compareTo(existing.getSelectedVersion()) > 0 )
+          checklist.put(artifact.getGroupId() + ":" + artifact.getArtifactId(), artifact);
+
+      } catch (OverConstrainedVersionException e) {
+        throw new MojoExecutionException("Unable to resolve version of artifacts", e);
+      }
     }
 //
 //    for(Artifact a : resolvedArtifacts) {
 //      System.out.println("project artifact: " + a.toString());
 //    }
 
+    resolvedArtifacts.addAll(checklist.values());
 
     return resolvedArtifacts;
   }
@@ -891,7 +912,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   }
 
 
-  Set<Artifact> getResolvedArtifactsFromUnresolvedDependencies(List<Dependency> unresolvedDependencies) throws MojoExecutionException {
+  Set<Artifact> getResolvedArtifactsFromUnresolvedDependencies(List<Dependency> unresolvedDependencies, boolean resolveTransitively) throws MojoExecutionException {
     final Set<Artifact> resolvedArtifacts = new HashSet<Artifact>();
 //    Artifact mojoArtifact = this.artifactFactory.createBuildArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion(), "pom");
 
@@ -909,17 +930,30 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 //        System.out.println("unresolved " + artifact.toString());
 //      }
 
-      ArtifactResolutionResult artifacts = artifactResolver.resolveTransitively(unresolvedArtifacts, project.getArtifact(),
-        remoteRepositories, localRepository, artifactMetadataSource);
-      resolvedArtifacts.addAll(artifacts.getArtifacts());
+
+
+      if (resolveTransitively) {
+        ArtifactResolutionResult artifacts = artifactResolver.resolveTransitively(unresolvedArtifacts, project.getArtifact(),
+            remoteRepositories, localRepository, artifactMetadataSource);
+        resolvedArtifacts.addAll(artifacts.getArtifacts());
+      } else {
+        // resolve each artifact individually
+        for( Artifact artifact : unresolvedArtifacts ) {
+          artifactResolver.resolve(artifact, remoteRepositories, localRepository);
+
+          resolvedArtifacts.add(artifact);
+        }
+      }
+
+
 
     } catch (Exception e) {
       throw new MojoExecutionException("Unable to complete configuring the build settings", e);
     }
 
-//    for (Artifact artifact : resolvedArtifacts) {
-//      System.out.println("matched " + artifact.toString());
-//    }
+    for (Artifact artifact : resolvedArtifacts) {
+      System.out.println("matched " + artifact.toString());
+    }
 
     return resolvedArtifacts;
   }
