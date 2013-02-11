@@ -33,6 +33,8 @@ import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.*;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.OverConstrainedVersionException;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Dependency;
@@ -723,13 +725,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       Artifact existing = checklist.get(artifact.getGroupId() + ":" + artifact.getArtifactId());
 
 
-      try {
-        if (existing == null || artifact.getSelectedVersion().compareTo(existing.getSelectedVersion()) > 0 )
-          checklist.put(artifact.getGroupId() + ":" + artifact.getArtifactId(), artifact);
-
-      } catch (OverConstrainedVersionException e) {
-        throw new MojoExecutionException("Unable to resolve version of artifacts", e);
-      }
+      ArtifactVersion existingVersion = new DefaultArtifactVersion(existing.getVersion());
+      ArtifactVersion pluginVersion = new DefaultArtifactVersion(artifact.getVersion());
+      if (existing == null || pluginVersion.compareTo(existingVersion) > 0 )
+        checklist.put(artifact.getGroupId() + ":" + artifact.getArtifactId(), artifact);
     }
 //
 //    for(Artifact a : resolvedArtifacts) {
