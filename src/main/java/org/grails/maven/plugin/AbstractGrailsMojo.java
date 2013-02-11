@@ -724,10 +724,16 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 
       Artifact existing = checklist.get(artifact.getGroupId() + ":" + artifact.getArtifactId());
 
+      boolean store = existing == null;
+      if (!store && existing != null) {
 
-      ArtifactVersion existingVersion = new DefaultArtifactVersion(existing.getVersion());
-      ArtifactVersion pluginVersion = new DefaultArtifactVersion(artifact.getVersion());
-      if (existing == null || pluginVersion.compareTo(existingVersion) > 0 )
+        ArtifactVersion existingVersion = new DefaultArtifactVersion(existing.getVersion());
+        ArtifactVersion pluginVersion = new DefaultArtifactVersion(artifact.getVersion());
+
+        store = pluginVersion.compareTo(existingVersion) > 0;
+      }
+
+      if ( store )
         checklist.put(artifact.getGroupId() + ":" + artifact.getArtifactId(), artifact);
     }
 //
