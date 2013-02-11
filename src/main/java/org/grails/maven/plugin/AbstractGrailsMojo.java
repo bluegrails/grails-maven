@@ -680,6 +680,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     }
   }
 
+  private String artifactToKey(Artifact artifact) {
+    return artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getClassifier();
+  }
+
   /*
   taken from the grails launcher as the plugins setup is broken
    */
@@ -716,13 +720,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     for( Artifact artifact : uncheckedArtifacts ) {
       if (artifact.getGroupId().equals("jline")) continue;
 //      resolvedArtifacts.add(artifact);
-      checklist.put(artifact.getGroupId() + ":" + artifact.getArtifactId(), artifact);
+      checklist.put(artifactToKey(artifact), artifact);
     }
 
     for( Artifact artifact : getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterGrailsDependencies(pluginProject.getDependencies())), true) ) {
       if (artifact.getGroupId().equals("jline")) continue;
 
-      Artifact existing = checklist.get(artifact.getGroupId() + ":" + artifact.getArtifactId());
+      String key = artifactToKey(artifact);
+      Artifact existing = checklist.get(key);
 
       boolean store = existing == null;
       if (!store && existing != null) {
@@ -733,15 +738,17 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         store = pluginVersion.compareTo(existingVersion) > 0;
       }
 
-      if ( store )
-        checklist.put(artifact.getGroupId() + ":" + artifact.getArtifactId(), artifact);
+      if ( store ) {
+        System.out.println("Newer or not otherwise included: " + key);
+        checklist.put(key, artifact);
+      }
     }
-//
+
+    resolvedArtifacts.addAll(checklist.values());
+
 //    for(Artifact a : resolvedArtifacts) {
 //      System.out.println("project artifact: " + a.toString());
 //    }
-
-    resolvedArtifacts.addAll(checklist.values());
 
     return resolvedArtifacts;
   }
