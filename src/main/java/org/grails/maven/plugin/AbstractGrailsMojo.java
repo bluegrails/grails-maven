@@ -257,11 +257,35 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   }
 
   protected String getFullGrailsPluginName() {
-    return this.getBasedir() + File.separator + getGrailsPluginFileName();
+    String pluginName = getGrailsPluginFileName();
+
+    return pluginName != null ? this.getBasedir() + File.separator + pluginName : null;
   }
 
   protected String getGrailsPluginFileName() {
-    return GrailsNameUtils.getNameFromScript(project.getArtifactId()) + "GrailsPlugin.groovy";
+    String artifactId = project.getArtifactId();
+
+    String pluginName = GrailsNameUtils.getNameFromScript(project.getArtifactId()) + "GrailsPlugin.groovy";
+
+    String name = this.getBasedir() + File.separator + pluginName;
+
+    if (new File(name).exists()) {
+      return pluginName;
+    }
+
+    if (artifactId.startsWith("grails-")) {
+      artifactId = artifactId.substring("grails-".length());
+
+      pluginName = GrailsNameUtils.getNameFromScript(artifactId) + "GrailsPlugin.groovy";
+
+      name = this.getBasedir() + File.separator + pluginName;
+
+      if (new File(name).exists()) {
+        return pluginName;
+      }
+    }
+
+    return null;
   }
 
   protected void syncAppVersion() {
@@ -275,8 +299,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       artifactId = artifactId.substring("grails-".length());
 
     final String fName = getFullGrailsPluginName();
-    File gpFile = new File( fName );
-    if ( gpFile.exists() ) {
+    if ( fName != null ) {
+      File gpFile = new File( fName );
+
       String text = null;
       String mod = null;
       try {

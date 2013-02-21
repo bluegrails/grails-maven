@@ -60,6 +60,18 @@ public class MvnFunctionalTestMojo extends AbstractGrailsMojo {
   private Boolean mavenSkip;
 
   /**
+   * @parameter expression="${run.skipIntegrationTests}"
+   * @since 2.5
+   */
+  private Boolean skipIntegrationTests = false;
+
+  /**
+   * @parameter expression="${run.skipFunctionalTests}"
+   * @since 2.5
+   */
+  private Boolean skipFunctionalTests = false;
+
+  /**
    * Set this to "true" to ignore a failure during testing. Its use is NOT RECOMMENDED, but quite convenient on
    * occasion.
    *
