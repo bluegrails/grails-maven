@@ -48,7 +48,7 @@
         <spring.version>3.1.2.RELEASE</spring.version>
 
         <!-- Dependencies -->
-        <grails.version>2.1.2</grails.version>
+        <grails.version>2.0.3</grails.version>
         <grails-bootstrap.version>${grails.version}</grails-bootstrap.version>
         <grails-core.version>${grails.version}</grails-core.version>
         <grails-scripts.version>${grails.version}</grails-scripts.version>

@@ -56,6 +56,7 @@ import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.logging.console.ConsoleLogger;
 import org.grails.launcher.GrailsLauncher;
 import org.grails.launcher.RootLoader;
+import org.grails.maven.plugin.tools.DecentGrailsLauncher;
 import org.grails.maven.plugin.tools.GrailsServices;
 
 /**
@@ -95,7 +96,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * Whether to run Grails in non-interactive mode or not. The default
    * is to run interactively, just like the Grails command-line.
    *
-   * @parameter expression="${nonInteractive}" default-value="false"
+   * @parameter expression="${nonInteractive}" default-value="true"
    * @required
    */
   protected boolean nonInteractive;
@@ -521,7 +522,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       }
 
       try {
-        final GrailsLauncher launcher = new GrailsLauncher(rootLoader, grailsHomePath, basedir.getAbsolutePath());
+        final DecentGrailsLauncher launcher = new DecentGrailsLauncher(rootLoader, grailsHomePath, basedir.getAbsolutePath());
         launcher.setPlainOutput(true);
 
         /**
@@ -554,7 +555,12 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
           System.setProperty("grails.env", env);
 
         getLog().info("grails -Dgrails.env=" + (env==null?"dev":env) + " " + targetName.toLowerCase() + " " + args);
-        final int retval = launcher.launch(targetName, args, env);
+        int retval;
+
+        if ("interactive".equals(targetName))
+          retval = launcher.launch("", "", env);
+        else
+          retval = launcher.launch(targetName, nonInteractive ? null : args, env);
 
         if ("true".equals(System.getProperty("print.grails.settings")))
           printIntellijIDEASettings(launcher, settingsField, pluginArtifacts);
@@ -593,7 +599,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     "grails.project.test.class.dir", "grails.project.resource.dir", "grails.project.source.dir", "grails.project.web.xml",
     "grails.project.plugins.dir", "grails.global.plugins.dir", "grails.project.test.reports.dir", "grails.project.test.source.dir"}));
 
-  private void printIntellijIDEASettings(GrailsLauncher launcher, Field settingsField, Set<Artifact> pluginArtifacts) {
+  private void printIntellijIDEASettings(DecentGrailsLauncher launcher, Field settingsField, Set<Artifact> pluginArtifacts) {
     try {
       Object settings = settingsField.get(launcher);
       Field configField = settings.getClass().getSuperclass().getDeclaredField("config");
@@ -988,9 +994,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       throw new MojoExecutionException("Unable to complete configuring the build settings", e);
     }
 
-    for (Artifact artifact : resolvedArtifacts) {
-      System.out.println("matched " + artifact.toString());
-    }
+//    for (Artifact artifact : resolvedArtifacts) {
+//      System.out.println("matched " + artifact.toString());
+//    }
 
     return resolvedArtifacts;
   }
@@ -1003,7 +1009,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * @param launcher The {@code GrailsLauncher} instance to be configured.
    */
   @SuppressWarnings("unchecked")
-  private Set<Artifact> configureBuildSettings(final GrailsLauncher launcher, Set<Artifact> resolvedArtifacts, Field settingsField, Class clazz, String args) throws ProjectBuildingException, MojoExecutionException {
+  private Set<Artifact> configureBuildSettings(final DecentGrailsLauncher launcher, Set<Artifact> resolvedArtifacts, Field settingsField, Class clazz, String args) throws ProjectBuildingException, MojoExecutionException {
     final String targetDir = this.project.getBuild().getDirectory();
     launcher.setDependenciesExternallyConfigured(true);
 
@@ -1180,7 +1186,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    */
   private boolean installGrailsPlugins(
     List<File> plugins,
-    final GrailsLauncher launcher,
+    final DecentGrailsLauncher launcher,
     Field settingsField,
     Class clazz) throws MojoExecutionException {
 
