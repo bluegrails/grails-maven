@@ -33,6 +33,9 @@ import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.*;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.apache.maven.artifact.versioning.OverConstrainedVersionException;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
@@ -53,6 +56,7 @@ import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.logging.console.ConsoleLogger;
 import org.grails.launcher.GrailsLauncher;
 import org.grails.launcher.RootLoader;
+import org.grails.maven.plugin.tools.DecentGrailsLauncher;
 import org.grails.maven.plugin.tools.GrailsServices;
 
 /**
@@ -92,7 +96,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * Whether to run Grails in non-interactive mode or not. The default
    * is to run interactively, just like the Grails command-line.
    *
-   * @parameter expression="${nonInteractive}" default-value="false"
+   * @parameter expression="${nonInteractive}" default-value="true"
    * @required
    */
   protected boolean nonInteractive;
@@ -209,6 +213,11 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private String grailsVersion;
 
   /**
+   * @parameter expression="${run.useTransitives}"
+   */
+  private boolean useTransitives = true; // by default use Maven 2.x to resolve transitives
+
+  /**
    * Returns the configured base directory for this execution of the plugin.
    *
    * @return The base directory.
@@ -249,11 +258,35 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   }
 
   protected String getFullGrailsPluginName() {
-    return this.getBasedir() + File.separator + getGrailsPluginFileName();
+    String pluginName = getGrailsPluginFileName();
+
+    return pluginName != null ? this.getBasedir() + File.separator + pluginName : null;
   }
 
   protected String getGrailsPluginFileName() {
-    return GrailsNameUtils.getNameFromScript(project.getArtifactId()) + "GrailsPlugin.groovy";
+    String artifactId = project.getArtifactId();
+
+    String pluginName = GrailsNameUtils.getNameFromScript(project.getArtifactId()) + "GrailsPlugin.groovy";
+
+    String name = this.getBasedir() + File.separator + pluginName;
+
+    if (new File(name).exists()) {
+      return pluginName;
+    }
+
+    if (artifactId.startsWith("grails-")) {
+      artifactId = artifactId.substring("grails-".length());
+
+      pluginName = GrailsNameUtils.getNameFromScript(artifactId) + "GrailsPlugin.groovy";
+
+      name = this.getBasedir() + File.separator + pluginName;
+
+      if (new File(name).exists()) {
+        return pluginName;
+      }
+    }
+
+    return null;
   }
 
   protected void syncAppVersion() {
@@ -267,8 +300,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       artifactId = artifactId.substring("grails-".length());
 
     final String fName = getFullGrailsPluginName();
-    File gpFile = new File( fName );
-    if ( gpFile.exists() ) {
+    if ( fName != null ) {
+      File gpFile = new File( fName );
+
       String text = null;
       String mod = null;
       try {
@@ -320,7 +354,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private static String grailsHomePath;
 
   private void resolveClasspath() throws MojoExecutionException {
-    getLog().info("Resolving dependencies");
+    getLog().info("Resolving dependencies" + (useTransitives?"":" - warning! we are not using transitive dependencies, only those directly in the pom.xml"));
 
     resolvedArtifacts = collectAllProjectArtifacts();
 
@@ -426,7 +460,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         }
 
         List<URL> jlineClasspath = generateExecutionClasspath(
-          getResolvedArtifactsFromUnresolvedDependencies(filteredDependencies));
+          getResolvedArtifactsFromUnresolvedDependencies(filteredDependencies, true));
 
         jlineClassloaderParent = new URLClassLoader( jlineClasspath.toArray(new URL[jlineClasspath.size()]), ClassLoader.getSystemClassLoader());
         callJline("setupTerminal");
@@ -488,7 +522,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       }
 
       try {
-        final GrailsLauncher launcher = new GrailsLauncher(rootLoader, grailsHomePath, basedir.getAbsolutePath());
+        final DecentGrailsLauncher launcher = new DecentGrailsLauncher(rootLoader, grailsHomePath, basedir.getAbsolutePath());
         launcher.setPlainOutput(true);
 
         /**
@@ -520,8 +554,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         else
           System.setProperty("grails.env", env);
 
-        getLog().info("grails -Dgrails.env=" + (env==null?"dev":env) + " " + targetName + " " + args);
-        final int retval = launcher.launch(targetName, args, env);
+        getLog().info("grails -Dgrails.env=" + (env==null?"dev":env) + " " + targetName.toLowerCase() + " " + args);
+        int retval = launcher.launch(targetName, nonInteractive ? null : args, env);
 
         if ("true".equals(System.getProperty("print.grails.settings")))
           printIntellijIDEASettings(launcher, settingsField, pluginArtifacts);
@@ -560,7 +594,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     "grails.project.test.class.dir", "grails.project.resource.dir", "grails.project.source.dir", "grails.project.web.xml",
     "grails.project.plugins.dir", "grails.global.plugins.dir", "grails.project.test.reports.dir", "grails.project.test.source.dir"}));
 
-  private void printIntellijIDEASettings(GrailsLauncher launcher, Field settingsField, Set<Artifact> pluginArtifacts) {
+  private void printIntellijIDEASettings(DecentGrailsLauncher launcher, Field settingsField, Set<Artifact> pluginArtifacts) {
     try {
       Object settings = settingsField.get(launcher);
       Field configField = settings.getClass().getSuperclass().getDeclaredField("config");
@@ -672,6 +706,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     }
   }
 
+  private String artifactToKey(Artifact artifact) {
+    return artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getClassifier();
+  }
+
   /*
   taken from the grails launcher as the plugins setup is broken
    */
@@ -702,20 +740,41 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     * that we get the benefit of Maven's conflict resolution.
     */
 
-    for( Artifact artifact : resolveFromTree() ) {
+    Set<Artifact> uncheckedArtifacts = useTransitives ? resolveFromTree() : getResolvedArtifactsFromUnresolvedDependencies(project.getDependencies(), false);
+    Map<String, Artifact> checklist = new HashMap<String, Artifact>();
+
+    for( Artifact artifact : uncheckedArtifacts ) {
       if (artifact.getGroupId().equals("jline")) continue;
-      resolvedArtifacts.add(artifact);
+//      resolvedArtifacts.add(artifact);
+      checklist.put(artifactToKey(artifact), artifact);
     }
 
-    for( Artifact artifact : getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterGrailsDependencies(pluginProject.getDependencies()))) ) {
+    for( Artifact artifact : getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterGrailsDependencies(pluginProject.getDependencies())), true) ) {
       if (artifact.getGroupId().equals("jline")) continue;
-      resolvedArtifacts.add(artifact);
+
+      String key = artifactToKey(artifact);
+      Artifact existing = checklist.get(key);
+
+      boolean store = existing == null;
+      if (!store && existing != null) {
+
+        ArtifactVersion existingVersion = new DefaultArtifactVersion(existing.getVersion());
+        ArtifactVersion pluginVersion = new DefaultArtifactVersion(artifact.getVersion());
+
+        store = pluginVersion.compareTo(existingVersion) > 0;
+      }
+
+      if ( store ) {
+        System.out.println("Newer or not otherwise included: " + key);
+        checklist.put(key, artifact);
+      }
     }
-//
+
+    resolvedArtifacts.addAll(checklist.values());
+
 //    for(Artifact a : resolvedArtifacts) {
 //      System.out.println("project artifact: " + a.toString());
 //    }
-
 
     return resolvedArtifacts;
   }
@@ -891,7 +950,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   }
 
 
-  Set<Artifact> getResolvedArtifactsFromUnresolvedDependencies(List<Dependency> unresolvedDependencies) throws MojoExecutionException {
+  Set<Artifact> getResolvedArtifactsFromUnresolvedDependencies(List<Dependency> unresolvedDependencies, boolean resolveTransitively) throws MojoExecutionException {
     final Set<Artifact> resolvedArtifacts = new HashSet<Artifact>();
 //    Artifact mojoArtifact = this.artifactFactory.createBuildArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion(), "pom");
 
@@ -909,9 +968,22 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 //        System.out.println("unresolved " + artifact.toString());
 //      }
 
-      ArtifactResolutionResult artifacts = artifactResolver.resolveTransitively(unresolvedArtifacts, project.getArtifact(),
-        remoteRepositories, localRepository, artifactMetadataSource);
-      resolvedArtifacts.addAll(artifacts.getArtifacts());
+
+
+      if (resolveTransitively) {
+        ArtifactResolutionResult artifacts = artifactResolver.resolveTransitively(unresolvedArtifacts, project.getArtifact(),
+            remoteRepositories, localRepository, artifactMetadataSource);
+        resolvedArtifacts.addAll(artifacts.getArtifacts());
+      } else {
+        // resolve each artifact individually
+        for( Artifact artifact : unresolvedArtifacts ) {
+          artifactResolver.resolve(artifact, remoteRepositories, localRepository);
+
+          resolvedArtifacts.add(artifact);
+        }
+      }
+
+
 
     } catch (Exception e) {
       throw new MojoExecutionException("Unable to complete configuring the build settings", e);
@@ -932,7 +1004,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    * @param launcher The {@code GrailsLauncher} instance to be configured.
    */
   @SuppressWarnings("unchecked")
-  private Set<Artifact> configureBuildSettings(final GrailsLauncher launcher, Set<Artifact> resolvedArtifacts, Field settingsField, Class clazz, String args) throws ProjectBuildingException, MojoExecutionException {
+  private Set<Artifact> configureBuildSettings(final DecentGrailsLauncher launcher, Set<Artifact> resolvedArtifacts, Field settingsField, Class clazz, String args) throws ProjectBuildingException, MojoExecutionException {
     final String targetDir = this.project.getBuild().getDirectory();
     launcher.setDependenciesExternallyConfigured(true);
 
@@ -1010,7 +1082,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     }
   }
 
-  private File getPluginTargetDir(Artifact plugin) {
+  private File getPluginTargetDirOverride(Artifact plugin) {
     String pluginLocationOverride = System.getProperty(plugin.getGroupId() + ":" + plugin.getArtifactId());
 
     File targetDir = null;
@@ -1022,28 +1094,43 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         targetDir = null;
       }
     }
+    return targetDir;
+  }
+
+  private File getPluginTargetDirCentral(Artifact plugin) {
+      return new File(this.centralPluginInstallDir, getPluginName(plugin) + "-" + plugin.getVersion());
+  }
+
+  private File getPluginTargetDir(Artifact plugin) {
+    File targetDir = getPluginTargetDirOverride(plugin);
 
     if (targetDir == null) {
       // The directory the plugin will be unzipped to.
-      targetDir = new File(this.centralPluginInstallDir, getPluginName(plugin) + "-" + plugin.getVersion());
+      targetDir = getPluginTargetDirCentral(plugin);
     }
 
     return targetDir;
   }
 
   private File getPluginDirAndInstallIfNecessary(final Artifact plugin) throws MojoExecutionException {
-    File targetDir = getPluginTargetDir(plugin);
+    boolean targetDirOverridden = true;
+    File targetDir = getPluginTargetDirOverride(plugin);
+    if (targetDir == null){
+        targetDirOverridden = false;
+        targetDir = getPluginTargetDirCentral(plugin);
+    }
 
     String pluginName = getPluginName(plugin);
     final String pluginVersion = plugin.getVersion();
+    boolean snapshot = pluginVersion.endsWith("-SNAPSHOT");
 
-    if (plugin.getVersion().endsWith("-SNAPSHOT") && plugin.getFile().getAbsolutePath().endsWith("target" + File.separator + "classes")) { // multi module build
+    if (snapshot && plugin.getFile().getAbsolutePath().endsWith("target" + File.separator + "classes")) { // multi module build
 
       targetDir = plugin.getFile().getParentFile().getParentFile();
       getLog().info(String.format("Plugin %s:%s is coming from a multi-module dependency (%s)", pluginName, pluginVersion, targetDir.getAbsolutePath()));
 
-    } else if (!targetDir.exists() || plugin.getVersion().endsWith("-SNAPSHOT")) {
-      // Unpack the plugin if it hasn't already been or if its a SNAPSHOT
+    } else if ( (!snapshot && !targetDir.exists()) || (snapshot && !targetDirOverridden)) {
+      // Unpack the plugin if it hasn't already been or if its a SNAPSHOT and not overridden by -Dflag
 
       // Ideally we need to now do two things (a) see if we are running JDK7
       // and (b) determine if -Dplugin.groupId.artifactId has been set - if this is so, we want to do a Files.createLink
@@ -1052,6 +1139,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       // know this has happened.
       // We wouldn't actually want this to be allowed when doing a release however.... So people should make sure they don't
       // specify them, they they'll be installed.
+
       getLog().info(String.format("Installing Plugin %s:%s into (%s)", pluginName, pluginVersion, targetDir.getAbsolutePath()));
       targetDir.mkdirs();
 
@@ -1093,7 +1181,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    */
   private boolean installGrailsPlugins(
     List<File> plugins,
-    final GrailsLauncher launcher,
+    final DecentGrailsLauncher launcher,
     Field settingsField,
     Class clazz) throws MojoExecutionException {
 

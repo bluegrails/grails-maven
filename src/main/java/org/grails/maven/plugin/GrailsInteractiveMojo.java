@@ -17,6 +17,10 @@ import org.apache.maven.plugin.MojoFailureException;
 public class GrailsInteractiveMojo extends AbstractGrailsMojo {
   public void execute() throws MojoExecutionException, MojoFailureException {
     nonInteractive = false;
+
+    System.setProperty("grails.console.enable.terminal", "true");
+    System.setProperty("-Dgrails.console.enable.interactive", "true");
+
     runGrails("Interactive");
   }
 }
