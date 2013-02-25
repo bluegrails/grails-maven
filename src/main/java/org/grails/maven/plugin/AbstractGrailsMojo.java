@@ -755,17 +755,25 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       String key = artifactToKey(artifact);
       Artifact existing = checklist.get(key);
 
-      boolean store = existing == null;
-      if (!store && existing != null) {
-
+//      boolean store;
+      if (existing != null) {
+/*
         ArtifactVersion existingVersion = new DefaultArtifactVersion(existing.getVersion());
         ArtifactVersion pluginVersion = new DefaultArtifactVersion(artifact.getVersion());
 
         store = pluginVersion.compareTo(existingVersion) > 0;
+
+        if(store) {
+					System.out.println("existing " + existingVersion.toString() + " plugin " + pluginVersion.toString() );
+        }
+      } else {
+        store = true; // non-existent ones automatically get stored
       }
 
       if ( store ) {
-        System.out.println("Newer or not otherwise included: " + key);
+*/
+//        System.out.println("Plugin version is newer or not otherwise included: " + artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + ":" + artifact.getClassifier() + ":" + artifact.getScope());
+				System.out.println("artifact from plugin missing : " + artifact.toString() );
         checklist.put(key, artifact);
       }
     }
