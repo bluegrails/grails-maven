@@ -747,42 +747,36 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       if (artifact.getGroupId().equals("jline")) continue;
 //      resolvedArtifacts.add(artifact);
       checklist.put(artifactToKey(artifact), artifact);
+//      resolvedArtifacts.add(artifact);
     }
 
     for( Artifact artifact : getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterGrailsDependencies(pluginProject.getDependencies())), true) ) {
       if (artifact.getGroupId().equals("jline")) continue;
 
+//      resolvedArtifacts.add(artifact);
+
       String key = artifactToKey(artifact);
       Artifact existing = checklist.get(key);
 
-//      boolean store;
-      if (existing != null) {
-/*
-        ArtifactVersion existingVersion = new DefaultArtifactVersion(existing.getVersion());
-        ArtifactVersion pluginVersion = new DefaultArtifactVersion(artifact.getVersion());
-
-        store = pluginVersion.compareTo(existingVersion) > 0;
-
-        if(store) {
-					System.out.println("existing " + existingVersion.toString() + " plugin " + pluginVersion.toString() );
-        }
-      } else {
-        store = true; // non-existent ones automatically get stored
-      }
-
-      if ( store ) {
-*/
-//        System.out.println("Plugin version is newer or not otherwise included: " + artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + ":" + artifact.getClassifier() + ":" + artifact.getScope());
-				System.out.println("artifact from plugin missing : " + artifact.toString() );
+      if (existing == null)
         checklist.put(key, artifact);
-      }
     }
 
     resolvedArtifacts.addAll(checklist.values());
 
-//    for(Artifact a : resolvedArtifacts) {
-//      System.out.println("project artifact: " + a.toString());
-//    }
+    if (getLog().isDebugEnabled()) {
+      List<String> deps = new ArrayList();
+
+      for(Artifact r : resolvedArtifacts) {
+        deps.add(r.toString());
+      }
+
+      Collections.sort(deps);
+
+      for(String s : deps ) {
+        System.out.println(s);
+      }
+    }
 
     return resolvedArtifacts;
   }
