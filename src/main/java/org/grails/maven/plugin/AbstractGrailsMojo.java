@@ -555,6 +555,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         else
           System.setProperty("grails.env", env);
 
+
         getLog().info("grails -Dgrails.env=" + (env==null?"dev":env) + " " + targetName.toLowerCase() + " " + args );
         int retval;
 
@@ -753,34 +754,22 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       if (artifact.getGroupId().equals("jline")) continue;
 //      resolvedArtifacts.add(artifact);
       checklist.put(artifactToKey(artifact), artifact);
+//      resolvedArtifacts.add(artifact);
     }
 
     for( Artifact artifact : getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterGrailsDependencies(pluginProject.getDependencies())), true) ) {
       if (artifact.getGroupId().equals("jline")) continue;
 
+//      resolvedArtifacts.add(artifact);
+
       String key = artifactToKey(artifact);
       Artifact existing = checklist.get(key);
 
-      boolean store = existing == null;
-      if (!store && existing != null) {
-
-        ArtifactVersion existingVersion = new DefaultArtifactVersion(existing.getVersion());
-        ArtifactVersion pluginVersion = new DefaultArtifactVersion(artifact.getVersion());
-
-        store = pluginVersion.compareTo(existingVersion) > 0;
-      }
-
-      if ( store ) {
-        //System.out.println("Newer or not otherwise included: " + key);
+      if (existing == null)
         checklist.put(key, artifact);
-      }
     }
 
     resolvedArtifacts.addAll(checklist.values());
-
-//    for(Artifact a : resolvedArtifacts) {
-//      System.out.println("project artifact: " + a.toString());
-//    }
 
     return resolvedArtifacts;
   }
