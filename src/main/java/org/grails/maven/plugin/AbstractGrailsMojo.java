@@ -548,19 +548,20 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         // Enable the plain output for the Grails command to fix an issue with JLine
         // consuming the standard output after execution via Maven.
         args = (args != null) ? "--plain-output " + args : "--plain-output";
+        args = (args != null) ? "--stacktrace " + args : "--stacktrace";
 
         if (env == null)
           System.clearProperty("grails.env");
         else
           System.setProperty("grails.env", env);
 
-        getLog().info("grails -Dgrails.env=" + (env==null?"dev":env) + " " + targetName.toLowerCase() + " " + args);
+        getLog().info("grails -Dgrails.env=" + (env==null?"dev":env) + " " + targetName.toLowerCase() + " " + args );
         int retval;
 
         if ("interactive".equals(targetName))
           retval = launcher.launch("", "", env);
         else
-          retval = launcher.launch(targetName, nonInteractive ? null : args, env);
+          retval = launcher.launch(targetName, args, env);
 
         if ("true".equals(System.getProperty("print.grails.settings")))
           printIntellijIDEASettings(launcher, settingsField, pluginArtifacts);
@@ -770,7 +771,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       }
 
       if ( store ) {
-        System.out.println("Newer or not otherwise included: " + key);
+        //System.out.println("Newer or not otherwise included: " + key);
         checklist.put(key, artifact);
       }
     }
