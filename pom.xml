@@ -477,6 +477,7 @@ POM for a Grails project. -->
       <id>release</id>
 
       <build>
+
         <plugins>
 
           <plugin>
