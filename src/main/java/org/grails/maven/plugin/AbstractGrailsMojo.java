@@ -371,6 +371,12 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     for(Artifact artifact : pluginArtifacts)
       pluginDirectories.add(getPluginDirAndInstallIfNecessary(artifact));
 
+    if (getLog().isInfoEnabled()) {
+      for(File f : pluginDirectories) {
+        getLog().info("plugin: " + f.getAbsolutePath());
+      }
+    }
+
     classpath = generateGrailsExecutionClasspath(resolvedArtifacts);
 
     System.gc();
@@ -511,7 +517,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     PrintStream currentOutput = System.out;
 
     try {
-      RootLoader rootLoader = new RootLoader(classpath, jlineClassloaderParent);
+      RootLoader rootLoader = new RootLoader(addBinaryPluginWorkaround(classpath), jlineClassloaderParent);
 
       // see if log4j is there and if so, initialize it
       try {
@@ -549,6 +555,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         // consuming the standard output after execution via Maven.
         args = (args != null) ? "--plain-output " + args : "--plain-output";
         args = (args != null) ? "--stacktrace " + args : "--stacktrace";
+        args = (args != null) ? "--verboseCompile " + args : "--verboseCompile";
 
         if (env == null)
           System.clearProperty("grails.env");
@@ -574,14 +581,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         // Simply rethrow it.
         throw ex;
       } catch (final Exception ex) {
-        System.setIn(currentIn);
-        System.setOut(currentOutput);
         getLog().error(ex);
 
         throw new MojoExecutionException("Unable to start Grails", ex);
       }
 
       rootLoader = null;
+    } catch (MalformedURLException mfe) {
+      throw new MojoExecutionException("Unable to start Grails", mfe);
     } finally {
       System.setIn(currentIn);
       System.setOut(currentOutput);
@@ -591,6 +598,29 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     System.gc(); // try and help with memory issues
   }
 
+  /**
+   * Gets around an issue where a binary plugin's resource refers to a source plugins's resource and the binary plugin is subsequently
+   * requested in a binary or source artifact.
+   *
+   * @param existing - the existing decoded classpath
+   * @return - the new classpath with the extra directories in it where source plugins will be stored
+   * @throws MalformedURLException
+   */
+  protected URL[] addBinaryPluginWorkaround(URL[] existing) throws MalformedURLException {
+
+    List<URL> classpath = new ArrayList<URL>();
+
+    classpath.add(new File(basedir, "target/plugin-build-classes").toURI().toURL());
+    classpath.add(new File(basedir, "target/plugin-provided-classes").toURI().toURL());
+    classpath.add(new File(basedir, "target/plugin-classes").toURI().toURL());
+    classpath.add(new File(basedir, "target/resources").toURI().toURL());
+
+    classpath.addAll(Arrays.asList(existing));
+
+    URL[] workaround = new URL[classpath.size()];
+
+    return classpath.toArray(workaround);
+  }
 
 
   public static final String SETTINGS_START_MARKER = "---=== IDEA Grails build settings ===---";
@@ -897,12 +927,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         // to a JDK.
         toolsJar = new File(javaHome, "tools.jar");
       }
+
       if (toolsJar.exists()) {
         java.net.URL url = toolsJar.toURI().toURL();
         if (url != null) {
           classpath.add(url);
         }
       }
+
       return classpath.toArray(new URL[classpath.size()]);
     } catch (final Exception e) {
       throw new MojoExecutionException("Failed to create classpath for Grails execution.", e);
