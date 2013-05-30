@@ -8,6 +8,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
@@ -66,7 +67,7 @@ public class ExportMojo extends AbstractMojo {
       if ("grails-plugin".equals(artifact.getType())) {
         try {
           getLog().info(String.format("exporting: %s:%s", artifact.getGroupId(), artifact.getArtifactId()));
-          extractArtifact(artifact.getFile(), outputDir);
+          extractZipArtifact(artifact.getFile(), outputDir);
         } catch (IOException iex) {
           String msg = String.format("Artifact %s:%s failed to export (%s)", artifact.getGroupId(), artifact.getArtifactId(), artifact.getFile().getAbsolutePath());
           getLog().error(msg, iex);
@@ -76,8 +77,9 @@ public class ExportMojo extends AbstractMojo {
     }
 
     try {
-      extractArtifact(basedir, outputDir);
+      extractDirArtifact(basedir, outputDir, "");
     } catch (IOException e) {
+      getLog().error(String.format("Unable to export %s into %s", basedir.getAbsolutePath(), outputDir.getAbsolutePath()));
       throw new MojoFailureException("Unable to export self into sources directory");
     }
   }
@@ -85,7 +87,32 @@ public class ExportMojo extends AbstractMojo {
   private List<String> prefixes = Arrays.asList("grails-app/conf/spring/", "grails-app'conf/hibernate/", "grails-app/conf/", "grails-app/controllers/", "grails-app/domain/", "grails-app/taglib/",
       "grails-app/services/", "grails-app/utils/", "src/groovy/", "src/java/");
 
-  private void extractArtifact(File file, File outputDir) throws IOException {
+  private void extractDirArtifact(File baseDir, File outputDir, String offset) throws IOException {
+    for( File file : baseDir.listFiles()) {
+      if (file.isDirectory()) {
+        if (file.getName().startsWith(".")) continue;
+        extractDirArtifact(file, outputDir, offset + file.getName() + "/");
+      } else if ( file.getName().endsWith("Plugin.groovy")) {
+        IOUtils.copy(new FileReader(file), new FileWriter(new File(outputDir, file.getName())));
+      } else {
+        String prefix = prefixMatch(offset + file.getName());
+
+        if (prefix != null) {
+          String fullName = (offset + file.getName()).substring(prefix.length());
+
+          getLog().info(String.format("prefix is %s and entry is %s and final is [%s]", prefix, file.getName(), fullName));
+
+          File outputFile = new File(outputDir, fullName);
+
+          ensureParentDirectoriesExist(outputDir, outputFile);
+
+          IOUtils.copy(new FileReader(file), new FileWriter(outputFile));
+        }
+      }
+    }
+  }
+
+  private void extractZipArtifact(File file, File outputDir) throws IOException {
     ZipFile zipFile = new ZipFile(file);
 
     Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -105,13 +132,17 @@ public class ExportMojo extends AbstractMojo {
 
           File outputFile = new File(outputDir, entry.getName().substring(prefix.length()));
 
-          if (!outputFile.getParentFile().equals(outputDir))
-            outputFile.getParentFile().mkdirs();
+          ensureParentDirectoriesExist(outputDir, outputFile);
 
           IOUtils.copy(zipFile.getInputStream(entry), new FileWriter(outputFile));
         }
       }
     }
+  }
+
+  private void ensureParentDirectoriesExist(File outputDir, File outputFile) {
+    if (!outputFile.getParentFile().equals(outputDir))
+      outputFile.getParentFile().mkdirs();
   }
 
   private String prefixMatch(String name) {
