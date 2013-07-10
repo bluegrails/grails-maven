@@ -217,6 +217,14 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
    */
   private boolean useTransitives = true; // by default use Maven 2.x to resolve transitives
 
+	/**
+	 * Whether we want the test dependencies to be used as run dependencies
+	 *
+	 * @parameter expression="${run.includeTestDependencies}
+	 */
+	private boolean runWithTestDependencies = false;
+
+
   /**
    * Returns the configured base directory for this execution of the plugin.
    *
@@ -1036,7 +1044,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     launcher.setDependenciesExternallyConfigured(true);
 
     // allow plugins that are being developed with fake api implementations to include the test artifacts in the runtime
-    if (args != null && args.contains("--run-with-test-dependencies")) {
+    if ((args != null && args.contains("--run-with-test-dependencies")) || runWithTestDependencies) {
+	    getLog().warn("grails-maven: Running with test dependencies");
       List<File> artifacts = artifactsToFiles(filterArtifacts(resolvedArtifacts, "compile", "runtime", "test"));
       launcher.setCompileDependencies(artifacts);
       launcher.setRuntimeDependencies(artifacts);
