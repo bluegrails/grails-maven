@@ -5,6 +5,9 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 
 import java.io.File;
@@ -23,28 +26,15 @@ import java.util.zip.ZipFile;
  * @author Richard Vowles
  * @version $Id$
  * @description Exports all of the source in a single zip
- * @goal export-src
- * @requiresProject true
- * @requiresDependencyResolution compile
  * @since 2.8
  */
+@Mojo(name = "export-src", requiresProject = true, requiresDependencyResolution = ResolutionScope.COMPILE)
 public class ExportMojo extends AbstractMojo {
 
-  /**
-   * POM
-   *
-   * @parameter expression="${project}"
-   * @readonly
-   * @required
-   */
+  @Parameter(property = "project", readonly = true, required = true)
   protected MavenProject project;
 
-  /**
-   * The directory where is launched the mvn command.
-   *
-   * @parameter default-value="${basedir}"
-   * @required
-   */
+  @Parameter(property = "basedir")
   protected File basedir;
 
 

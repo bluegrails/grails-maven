@@ -17,6 +17,8 @@ package org.grails.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Runs a Grails applications unit tests and integration tests.
@@ -24,11 +26,9 @@ import org.apache.maven.plugin.MojoFailureException;
  * @author <a href="mailto:aheritier@gmail.com">Arnaud HERITIER</a>
  * @version $Id$
  * @description Runs a Grails applications unit tests and integration tests.
- * @goal test-app
- * @requiresProject false
- * @requiresDependencyResolution test
  * @since 0.1
  */
+@Mojo(name = "test-app", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST)
 public class GrailsTestAppMojo extends AbstractGrailsMojo {
 
   public void execute() throws MojoExecutionException, MojoFailureException {

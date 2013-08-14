@@ -17,6 +17,10 @@ package org.grails.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Runs a Grails applications unit tests and integration tests.
@@ -24,47 +28,46 @@ import org.apache.maven.plugin.MojoFailureException;
  * @author <a href="mailto:aheritier@gmail.com">Arnaud HERITIER</a>
  * @version $Id$
  * @description Runs a Grails applications unit tests and integration tests.
- * @goal maven-test
- * @phase test
- * @requiresProject true
- * @requiresDependencyResolution test
  * @since 0.3
  */
+@Mojo(name = "maven-test", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST, defaultPhase = LifecyclePhase.TEST)
 public class MvnTestMojo extends AbstractGrailsMojo {
 
-  /**
-   * Set this to 'true' to bypass unit/integration tests entirely. Its use is
-   *
-   * @parameter default-value="false" expression="${skipTests}"
-   * @since 0.4
-   */
-  private boolean skipTests;
+	/**
+	 * Set this to 'true' to bypass functional tests entirely. Its use is
+	 * NOT RECOMMENDED, but quite convenient on occasion.
+	 *
+	 * @since 0.4
+	 */
+	@Parameter(property = "skipTests", defaultValue = "false")
+	private boolean skipTests;
 
-  /**
-   * Set this to 'true' to bypass unit tests entirely. Its use is
-   * NOT RECOMMENDED, but quite convenient on occasion.
-   *
-   * @parameter expression="${grails.test.skip}"
-   * @since 0.3
-   */
-  private boolean skip;
+	/**
+	 * Set this to 'true' to bypass functional tests entirely. Its use is
+	 * NOT RECOMMENDED, but quite convenient on occasion.
+	 *
+	 * @since 0.3
+	 */
+	@Parameter(property = "grails.test.skip")
+	private boolean skip;
 
-  /**
-   * Set this to 'true' to bypass unit/integration tests entirely. Its use is
-   * NOT RECOMMENDED, but quite convenient on occasion.
-   *
-   * @parameter expression="${maven.test.skip}"
-   * @since 0.3
-   */
-  private Boolean mavenSkip;
+	/**
+	 * Set this to 'true' to bypass functional tests entirely. Its use is
+	 * NOT RECOMMENDED, but quite convenient on occasion.
+	 *
+	 * @since 0.3
+	 */
+	@Parameter(property = "maven.test.skip")
+	private Boolean mavenSkip;
 
-  /**
-   * Set this to "true" to ignore a failure during testing. Its use is NOT RECOMMENDED, but quite convenient on
-   * occasion.
-   *
-   * @parameter default-value="false" expression="${maven.test.failure.ignore}"
-   */
-  private boolean testFailureIgnore;
+	/**
+	 * Set this to "true" to ignore a failure during testing. Its use is NOT RECOMMENDED, but quite convenient on
+	 * occasion.
+	 *
+	 */
+	@Parameter(property = "maven.test.failure.ignore", defaultValue = "false")
+	private boolean testFailureIgnore;
+
 
   public void execute() throws MojoExecutionException, MojoFailureException {
     if (skipTests || skip || (mavenSkip != null && mavenSkip.booleanValue())) {

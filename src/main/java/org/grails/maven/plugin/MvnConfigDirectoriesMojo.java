@@ -19,6 +19,9 @@ import java.io.File;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Set sources/tests directories to be compatible with the directories layout used by grails.
@@ -26,11 +29,9 @@ import org.apache.maven.plugin.MojoFailureException;
  * @author <a href="mailto:aheritier@gmail.com">Arnaud HERITIER</a>
  * @version $Id$
  * @description Set sources/tests directories to be compatible with the directories layout used by grails.
- * @goal config-directories
- * @phase generate-sources
- * @requiresProject true
  * @since 0.3
  */
+@Mojo(name = "config-directories", requiresProject = true, defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class MvnConfigDirectoriesMojo extends AbstractGrailsMojo {
   /*
   * (non-Javadoc)

@@ -4,6 +4,10 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * <p>Creates a WAR archive and register it in maven. This differs from
@@ -20,28 +24,22 @@ import org.apache.maven.plugin.MojoFailureException;
  * @author Peter Ledbrook
  * @version $Id$
  * @description Creates a WAR archive and register it in maven.
- * @goal maven-grails-app-war
- * @phase package
- * @requiresDependencyResolution test
  * @since 1.1
  */
+@Mojo(name = "maven-grails-app-war", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST, defaultPhase = LifecyclePhase.PACKAGE)
 public class MvnGrailsAppWarMojo extends MvnWarMojo {
   /**
    * The maven artifact.
    *
-   * @parameter expression="${project.artifact}"
-   * @required
-   * @readonly
    */
+  @Parameter(property = "project.artifact", required = true, readonly = true)
   private Artifact artifact;
 
   /**
    * The artifact handler.
    *
-   * @parameter expression="${component.org.apache.maven.artifact.handler.ArtifactHandler#grails-app}"
-   * @required
-   * @readonly
    */
+  @Parameter(property = "component.org.apache.maven.artifact.handler.ArtifactHandler#grails-app")
   private ArtifactHandler artifactHandler;
 
   /**

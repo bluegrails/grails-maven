@@ -53,7 +53,7 @@ public class GrailsServicesTest extends PlexusTestCase {
 
         grailsServices.setBasedir(getTestFile(""));
 
-        MavenProject pom = grailsServices.createPOM("a.group", grailsDescriptorTest, "org.grails",
+        MavenProject pom = grailsServices.createPOM("a.group", grailsDescriptorTest, "com.bluetrainsoftware.bluegrails",
             "grails-maven-plugin", "1.0");
 
         assertEquals(0, modelValidator.validate(pom.getModel()).getMessageCount());

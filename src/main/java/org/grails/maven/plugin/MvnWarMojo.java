@@ -22,6 +22,10 @@ import java.util.Collections;
 import org.apache.maven.model.Build;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProjectHelper;
 
 /**
@@ -31,18 +35,15 @@ import org.apache.maven.project.MavenProjectHelper;
  * @author <a href="mailto:aheritier@gmail.com">Arnaud HERITIER</a>
  * @version $Id$
  * @description Creates a WAR archive and register it in maven.
- * @goal maven-war
- * @phase package
- * @requiresDependencyResolution
  * @since 0.1
  */
+@Mojo(name = "maven-war", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST, defaultPhase = LifecyclePhase.PACKAGE)
 public class MvnWarMojo extends AbstractGrailsMojo {
   protected File warFile;
 
   /**
-   * @component
    */
-
+  @Component
   private MavenProjectHelper projectHelper;
 
   /**

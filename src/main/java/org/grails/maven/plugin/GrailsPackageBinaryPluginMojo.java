@@ -5,6 +5,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.*;
 import org.apache.maven.project.MavenProjectHelper;
 
 import java.io.File;
@@ -17,36 +18,28 @@ import java.util.Collections;
  * @author  Richard Vowles
  * @version $Id$
  * @description Packages the Grails plugin.
- * @goal package-binary-plugin
- * @phase package
- * @requiresProject true
- * @requiresDependencyResolution test
  * @since 0.4
  */
+@Mojo(name = "package-binary-plugin", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST, defaultPhase = LifecyclePhase.PACKAGE)
 public class GrailsPackageBinaryPluginMojo extends AbstractGrailsMojo {
 
   /**
    * The artifact that this project produces.
    *
-   * @parameter expression="${project.artifact}"
-   * @required
-   * @readonly
    */
+  @Parameter(property = "project.artifact", required = true, readonly = true)
   private Artifact artifact;
 
   /**
-   * @component
    */
-
+  @Component
   private MavenProjectHelper projectHelper;
 
   /**
    * The artifact handler.
    *
-   * @parameter expression="${component.org.apache.maven.artifact.handler.ArtifactHandler#grails-plugin2}"
-   * @required
-   * @readonly
    */
+  @Parameter(property = "component.org.apache.maven.artifact.handler.ArtifactHandler#grails-plugin2")
   protected ArtifactHandler artifactHandler;
 
   public void execute() throws MojoExecutionException, MojoFailureException {

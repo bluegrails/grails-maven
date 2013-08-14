@@ -17,6 +17,9 @@ package org.grails.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Runs a Grails application in Jetty with HTTPS listener.
@@ -24,11 +27,9 @@ import org.apache.maven.plugin.MojoFailureException;
  * @author <a href="mailto:aheritier@gmail.com">Arnaud HERITIER</a>
  * @version $Id$
  * @description Runs a Grails application in Jetty with HTTPS listener.
- * @goal run-app-https
- * @requiresProject true
- * @requiresDependencyResolution test
  * @since 0.3
  */
+@Mojo(name = "run-app-https", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST)
 public class GrailsRunAppHttpsMojo extends AbstractGrailsMojo {
 
   public void execute() throws MojoExecutionException, MojoFailureException {

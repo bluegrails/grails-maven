@@ -40,6 +40,8 @@ import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectBuilder;
 import org.apache.maven.project.ProjectBuildingException;
@@ -80,149 +82,146 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   /**
    * The directory where is launched the mvn command.
    *
-   * @parameter default-value="${basedir}"
-   * @required
    */
+  @Parameter(defaultValue = "${basedir}", required = true)
   protected File basedir;
 
   /**
    * The Grails environment to use.
    *
-   * @parameter expression="${grails.env}"
    */
+  @Parameter(property = "grails.env")
   protected String env;
 
   /**
    * Whether to run Grails in non-interactive mode or not. The default
    * is to run interactively, just like the Grails command-line.
    *
-   * @parameter expression="${nonInteractive}" default-value="true"
-   * @required
    */
+  @Parameter(property = "nonInteractive", defaultValue = "true", required = true)
   protected boolean nonInteractive;
 
   /**
    * The directory where plugins are stored.
    *
-   * @parameter expression="${pluginsDirectory}" default-value="${basedir}/plugins"
-   * @required
    */
+  @Parameter(property = "pluginsDirectory", defaultValue = "${basedir}/plugins", required = true)
   protected File pluginsDir;
 
   /**
    * The path to the Grails installation.
    *
-   * @parameter expression="${grailsHome}"
    */
+  @Parameter(property = "grailsHome")
   protected File grailsHome;
 
 
   /**
    * The Maven settings reference.
    *
-   * @parameter expression="${settings}"
-   * @required
-   * @readonly
    */
+  @Parameter(property = "settings", required = true, readonly = true)
   protected Settings settings;
 
   /**
    * POM
    *
-   * @parameter expression="${project}"
-   * @readonly
-   * @required
    */
+  @Parameter(property = "project", readonly = true, required = true)
   protected MavenProject project;
 
-  /**
-   * @component
-   */
+  @Component
   private ArtifactResolver artifactResolver;
 
   /**
-   * @component
    */
+  @Component
   private ArtifactFactory artifactFactory;
 
   /**
-   * @component
    */
+  @Component
   private ArtifactMetadataSource artifactMetadataSource;
 
-  /**
-   * @parameter expression="${localRepository}"
-   * @required
-   * @readonly
-   */
+  @Parameter(property = "localRepository")
   private ArtifactRepository localRepository;
+
   /**
    * The artifact collector to use.
    *
-   * @component
-   * @required
-   * @readonly
    */
+  @Component
   private ArtifactCollector artifactCollector;
 
   /**
    * The dependency tree builder to use.
    *
-   * @component
-   * @required
-   * @readonly
    */
+  @Component
   private DependencyTreeBuilder dependencyTreeBuilder;
   /**
-   * @parameter expression="${project.remoteArtifactRepositories}"
-   * @required
-   * @readonly
    */
-  private List<?> remoteRepositories;
+  @Parameter(property = "project.remoteArtifactRepositories", readonly = true, required = true)
+  private List<ArtifactRepository> remoteRepositories;
 
   /**
-   * @component
    */
+  @Component
   private MavenProjectBuilder projectBuilder;
 
   /**
-   * @component
-   * @readonly
    */
+  @Component
   private GrailsServices grailsServices;
 
 
   /**
-   * @parameter expression="${user.home}/.grails/maven"
    */
+  @Parameter(defaultValue = "${user.home}/.grails/maven")
   private File centralPluginInstallDir;
 
   /**
    * If this is passed, it will set the grails.server.factory property.
    *
-   * @parameter
    */
+  @Parameter
   private String servletServerFactory;
 
   /**
    * We want this to come from the main pom so we can re-write the dependencies of the plugin to match
    *
-   * @parameter expression="${grails.version}
    */
 
+  @Parameter(property = "grails.version")
   private String grailsVersion;
 
-  /**
-   * @parameter expression="${run.useTransitives}"
-   */
+
+  @Parameter(property = "run.useTransitives")
   private boolean useTransitives = true; // by default use Maven 2.x to resolve transitives
 
 	/**
 	 * Whether we want the test dependencies to be used as run dependencies
-	 *
-	 * @parameter expression="${run.includeTestDependencies}
 	 */
-	private boolean runWithTestDependencies = false;
+	@Parameter(property = "run.includeTestDependencies")
+	protected boolean runWithTestDependencies = false;
+
+	/**
+	 * Whether we want the execute the unit tests
+	 */
+	@Parameter(property = "run.unitTest")
+	protected boolean runUnitTests = true;
+
+	/**
+	 * Whether we want the execute the unit tests
+	 */
+	@Parameter(property = "run.integrationTest")
+	protected boolean runIntegrationTests = true;
+
+	/**
+	 * Whether we want the execute the unit tests
+	 */
+	@Parameter(property = "run.functionalTest")
+	protected boolean runFunctionalTests = true;
 
 
   /**
@@ -1187,8 +1186,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       try {
         unzipper.extract();
       } catch (ArchiverException e) {
-        throw new MojoExecutionException("Unable to extract zip", e);
-      } catch (IOException e) {
         throw new MojoExecutionException("Unable to extract zip", e);
       }
     } else {

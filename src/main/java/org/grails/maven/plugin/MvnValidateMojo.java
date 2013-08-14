@@ -17,6 +17,10 @@ package org.grails.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.grails.maven.plugin.tools.GrailsProject;
 
 /**
@@ -25,29 +29,23 @@ import org.grails.maven.plugin.tools.GrailsProject;
  * @author <a href="mailto:aheritier@gmail.com">Arnaud HERITIER</a>
  * @version $Id$
  * @description Validate consistency between Grails (application.properties) and Maven (pom.xml) settings.
- * @goal validate
- * @phase validate
- * @requiresDependencyResolution runtime
  * @since 0.1
  */
+@Mojo(name = "validate", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST, defaultPhase = LifecyclePhase.VALIDATE)
 public class MvnValidateMojo extends AbstractGrailsMojo {
 
   /**
    * The artifact id of the project.
    *
-   * @parameter expression="${project.artifactId}"
-   * @required
-   * @readonly
    */
+  @Parameter(property = "project.artifactId", readonly = true, required = true)
   private String artifactId;
 
   /**
    * The version id of the project.
    *
-   * @parameter expression="${project.version}"
-   * @required
-   * @readonly
    */
+  @Parameter(property = "project.version", readonly = true, required = true)
   private String version;
 
   public void execute() throws MojoExecutionException, MojoFailureException {

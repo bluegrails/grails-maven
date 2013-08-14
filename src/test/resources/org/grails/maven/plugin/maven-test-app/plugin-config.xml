@@ -22,7 +22,7 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.grails</groupId>
+        <groupId>com.bluetrainsoftware.bluegrails</groupId>
         <artifactId>grails-maven-plugin</artifactId>
         <extensions>true</extensions>
         <configuration/>
