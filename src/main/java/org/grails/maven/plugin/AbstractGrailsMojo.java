@@ -966,17 +966,10 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private List<Dependency> filterGrailsDependencies(final List<Dependency> dependencies) {
     final List<Dependency> filteredDependencies = new ArrayList<Dependency>();
     for (final Dependency dependency : dependencies) {
-      // don't include grails-dependencies ever, and don't include any dependency called test when building a war
-      boolean ignore = (dependency.getArtifactId().contains("test") && lastTargetName.equals("War")) ||
-                        (dependency.getGroupId().equals("org.grails") && "grails-dependencies".equals(dependency.getArtifactId())) ||
-                        dependency.getGroupId().equals("org.slf4j") ||
-                        dependency.getGroupId().equals("jline") ||
-        dependency.getGroupId().equals("com.sun") ||
-        (dependency.getGroupId().equals("junit") && lastTargetName.equals("War")) ||
-        (dependency.getGroupId().equals("xmlunit") && lastTargetName.equals("War"));
 
-      if (!ignore) {
-//        System.out.println("Adding " + dependency.getGroupId() + " : " + dependency.getArtifactId());
+	    if (dependency.getArtifactId().equals("grails-scripts") ||
+		      dependency.getArtifactId().equals("grails-bootstrap") ||
+		      dependency.getArtifactId().equals("grails-launcher")) {
         filteredDependencies.add(dependency);
       }
     }

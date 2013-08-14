@@ -190,28 +190,7 @@
       <version>[1.3.2]</version>
     </dependency>
 
-    <!-- Required by the "create-pom" goal because it contains the template
-POM for a Grails project. -->
-    <dependency>
-      <groupId>org.grails</groupId>
-      <artifactId>grails-maven-archetype</artifactId>
-      <version>${grails-maven-archetype.version}</version>
-      <scope>runtime</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>javax.servlet-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.grails</groupId>
-          <artifactId>grails-plugin-log4j</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+
     <dependency>
       <groupId>org.grails</groupId>
       <artifactId>grails-scripts</artifactId>
@@ -314,6 +293,7 @@ POM for a Grails project. -->
       <groupId>com.bluetrainsoftware.composite</groupId>
       <artifactId>composite-unit-test</artifactId>
       <version>[1,2)</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
