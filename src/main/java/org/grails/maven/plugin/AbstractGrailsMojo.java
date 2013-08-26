@@ -794,6 +794,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 //      resolvedArtifacts.add(artifact);
     }
 
+	  // major breaking change, no dependencies from plugin
+	  /*
     for( Artifact artifact : getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterGrailsDependencies(pluginProject.getDependencies())), true) ) {
       if (artifact.getGroupId().equals("jline")) continue;
 
@@ -805,6 +807,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       if (existing == null)
         checklist.put(key, artifact);
     }
+    */
 
     resolvedArtifacts.addAll(checklist.values());
 
@@ -869,7 +872,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     /*
     * Convert each resolved artifact into a URL/classpath element.
     */
-    final List<URL> classpath = new ArrayList<URL>();
+    final ArrayList<URL> classpath = new ArrayList<URL>();
 
     final List<String> excludes = Arrays.asList(excludeGroups);
 
@@ -881,7 +884,13 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 //        System.out.println("artifact " + resolvedArtifact.toString());
         if (file != null) {
 //          System.out.println("adding " + file.getAbsolutePath());
-          classpath.add(file.toURI().toURL());
+	        if (resolvedArtifact.getArtifactId().endsWith("-patch")) {
+		        // a patch? grails is full of them, insert it at the start
+		        classpath.add(0, file.toURI().toURL());
+	        } else { // insert it at the end
+		        classpath.add(file.toURI().toURL());
+	        }
+
         }
       }
     } catch (MalformedURLException murle) {
