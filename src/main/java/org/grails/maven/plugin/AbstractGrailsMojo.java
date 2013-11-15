@@ -223,6 +223,25 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 	@Parameter(property = "run.functionalTest")
 	protected boolean runFunctionalTests = true;
 
+	/**
+	 * When running using this plugin ONLY, what jars should be inserted into the front of the classpath
+	 * to ensure they get loaded first.
+	 */
+	@Parameter(property = "run.patchArtifacts")
+	protected String patchArtifacts = null;
+
+
+	protected List<String> artifactIdsToInsertAtStartOfClasspath = new ArrayList<String>();
+
+	protected void parsePatchArtifacts() {
+		if (patchArtifacts != null) {
+			StringTokenizer st = new StringTokenizer(patchArtifacts, ",");
+
+			while (st.hasMoreTokens()) {
+				artifactIdsToInsertAtStartOfClasspath.add(st.nextToken());
+			}
+		}
+	}
 
   /**
    * Returns the configured base directory for this execution of the plugin.
@@ -361,6 +380,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
   private static String grailsHomePath;
 
   private void resolveClasspath() throws MojoExecutionException {
+	  parsePatchArtifacts();
+
     getLog().info("Resolving dependencies" + (useTransitives?"":" - warning! we are not using transitive dependencies, only those directly in the pom.xml"));
 
     resolvedArtifacts = collectAllProjectArtifacts();
@@ -883,8 +904,8 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         final File file = resolvedArtifact.getFile();
 //        System.out.println("artifact " + resolvedArtifact.toString());
         if (file != null) {
-//          System.out.println("adding " + file.getAbsolutePath());
-	        if (resolvedArtifact.getArtifactId().endsWith("-patch")) {
+	        if (artifactIdsToInsertAtStartOfClasspath.contains(resolvedArtifact.getArtifactId())) {
+            getLog().info("adding at the start" + file.getAbsolutePath());
 		        // a patch? grails is full of them, insert it at the start
 		        classpath.add(0, file.toURI().toURL());
 	        } else { // insert it at the end
