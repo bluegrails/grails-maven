@@ -18,7 +18,7 @@
 
   <groupId>com.bluetrainsoftware.bluegrails</groupId>
   <artifactId>grails-maven-plugin</artifactId>
-  <version>3.4-SNAPSHOT</version>
+  <version>3.4</version>
   <packaging>maven-plugin</packaging>
 
   <name>Maven plugin for GRAILS applications</name>
