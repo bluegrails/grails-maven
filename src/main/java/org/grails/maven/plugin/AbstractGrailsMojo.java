@@ -594,17 +594,21 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         getLog().info("grails -Dgrails.env=" + (env==null?"dev":env) + " " + targetName.toLowerCase() + " " + args );
         int retval;
 
-        if ("interactive".equals(targetName))
-          retval = launcher.launch("", "", env);
-        else
-          retval = launcher.launch(targetName, args, env);
+	      if ("true".equals(System.getProperty("print.grails.settings")) || "ideaprintprojectsettings".equalsIgnoreCase(targetName)) {
+		      printIntellijIDEASettings(launcher, settingsField, pluginArtifacts);
+	      } else {
 
-        if ("true".equals(System.getProperty("print.grails.settings")))
-          printIntellijIDEASettings(launcher, settingsField, pluginArtifacts);
+		      if ("interactive".equals(targetName))
+	          retval = launcher.launch("", "", env);
+	        else
+	          retval = launcher.launch(targetName, args, env);
 
-        if (retval != 0) {
-          throw new MojoExecutionException("Grails returned non-zero value: " + retval);
-        }
+
+	        if (retval != 0) {
+	          throw new MojoExecutionException("Grails returned non-zero value: " + retval);
+	        }
+
+	      }
       } catch (final MojoExecutionException ex) {
         // Simply rethrow it.
         throw ex;
