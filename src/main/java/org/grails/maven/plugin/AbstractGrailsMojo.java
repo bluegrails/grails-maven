@@ -950,9 +950,11 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
         }
       }
 
-//      for (URL url : classpath) {
-//        getLog().debug("classpath " + url.toString());
-//      }
+      if (System.getProperty("grails.debug.classpath") != null) {
+        for (URL url : classpath) {
+          getLog().info("classpath " + url.toString());
+        }
+ 		  }
 
       /*
       * Add the "tools.jar" to the classpath so that the Grails scripts can run native2ascii.
