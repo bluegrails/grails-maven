@@ -62,7 +62,9 @@ import org.grails.maven.plugin.tools.DecentGrailsLauncher;
 import org.grails.maven.plugin.tools.GrailsServices;
 
 /**
- * Common services for all Mojos using Grails
+ * Common services for all Mojos using Grails.
+ *
+ * This should be re-written in Groovy (static)
  *
  * @author <a href="mailto:aheritier@gmail.com">Arnaud HERITIER</a>
  * @author Peter Ledbrook
