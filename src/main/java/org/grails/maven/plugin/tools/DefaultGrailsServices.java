@@ -30,13 +30,13 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginManagement;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.groovy.grails.io.support.FileSystemResource;
 import org.codehaus.groovy.grails.plugins.AstPluginDescriptorReader;
 import org.codehaus.groovy.grails.plugins.GrailsPluginInfo;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
-import org.springframework.core.io.FileSystemResource;
 
 /**
  * @author <a href="mailto:aheritier@gmail.com">Arnaud HERITIER</a>

@@ -18,24 +18,13 @@ package org.grails.maven.plugin;
 
 import grails.util.GrailsNameUtils;
 import grails.util.Metadata;
-
-import java.io.*;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.*;
-
 import groovy.lang.GString;
+import org.apache.commons.io.IOUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.*;
-import org.apache.maven.artifact.versioning.ArtifactVersion;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.apache.maven.artifact.versioning.OverConstrainedVersionException;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
@@ -56,10 +45,16 @@ import org.codehaus.plexus.archiver.ArchiverException;
 import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.logging.console.ConsoleLogger;
-import org.grails.launcher.GrailsLauncher;
 import org.grails.launcher.RootLoader;
 import org.grails.maven.plugin.tools.DecentGrailsLauncher;
 import org.grails.maven.plugin.tools.GrailsServices;
+
+import java.io.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.*;
 
 /**
  * Common services for all Mojos using Grails.
@@ -421,12 +416,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     lastArtifactId = project.getArtifactId();
     lastGroupId = project.getGroupId();
 
-
-    // hold onto it as it holds the jLine.Terminal class we need to reset the terminal back to normal. We have to do it this
-    // way as on Windows it fails as we hold a ref and the Grails class loader holds a ref, JLine tries to duplicate load the
-    // Windows DLL.
-    initializeJline();
-
     configureMavenProxy();
 
     resolveClasspath();
@@ -450,13 +439,13 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     }
 
     // see if we are using logback and not log4j
-    final String logbackFilename = this.getBasedir() + "/logback.xml";
-
-    if (new File(logbackFilename).exists()) {
-      getLog().info("Found logback configuration, setting logback.xml to " + logbackFilename);
-
-      System.setProperty("logback.configurationFile", logbackFilename);
-    }
+//    final String logbackFilename = this.getBasedir() + "/logback.xml";
+//
+//    if (new File(logbackFilename).exists()) {
+//      getLog().info("Found logback configuration, setting logback.xml to " + logbackFilename);
+//
+//      System.setProperty("logback.configurationFile", logbackFilename);
+//    }
 
   }
 
@@ -480,46 +469,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 //    getLog().info("name : " + sb.toString());
 //  }
 
-  // all the jline stuff is around Windows and the version of jline
-
-  private static ClassLoader jlineClassloaderParent;
-
-  protected void initializeJline() throws MojoExecutionException {
-    try {
-      if (jlineClassloaderParent == null) {
-
-        final List<Dependency> filteredDependencies = new ArrayList<Dependency>();
-        for (final Object dep : getPluginProject().getDependencies()) {
-          Dependency dependency = (Dependency)dep;
-          if (dependency.getGroupId().equals("jline"))
-            filteredDependencies.add(dependency);
-        }
-
-        List<URL> jlineClasspath = generateExecutionClasspath(
-          getResolvedArtifactsFromUnresolvedDependencies(filteredDependencies, true));
-
-        jlineClassloaderParent = new URLClassLoader( jlineClasspath.toArray(new URL[jlineClasspath.size()]), ClassLoader.getSystemClassLoader());
-        callJline("setupTerminal");
-        resetTerminal();
-      }
-    } catch (ProjectBuildingException pbe) {
-      throw new MojoExecutionException("Unable to load plugin project", pbe);
-    }
-  }
-
-  private void callJline(String method) {
-    if (jlineClassloaderParent != null) {
-      try {
-        Class cls = jlineClassloaderParent.loadClass("jline.Terminal");
-        invokeStaticMethod(cls, method);
-      } catch (Exception ex) {
-      }
-    }
-  }
-
-  private void resetTerminal() {
-    callJline("resetTerminal");
-  }
 
   /**
    * Executes the requested Grails target.  The "targetName" must match a known
@@ -547,7 +496,7 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     PrintStream currentOutput = System.out;
 
     try {
-      RootLoader rootLoader = new RootLoader(addBinaryPluginWorkaround(classpath), jlineClassloaderParent);
+      RootLoader rootLoader = new RootLoader(addBinaryPluginWorkaround(classpath));
 
       // see if log4j is there and if so, initialize it
       try {
@@ -581,7 +530,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
           args = (args != null) ? "--non-interactive " + args : "--non-interactive ";
         }
 
-        // Enable the plain output for the Grails command to fix an issue with JLine
         // consuming the standard output after execution via Maven.
         args = (args != null) ? "--plain-output " + args : "--plain-output";
         args = (args != null) ? "--stacktrace " + args : "--stacktrace";
@@ -626,7 +574,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     } finally {
       System.setIn(currentIn);
       System.setOut(currentOutput);
-      resetTerminal();
     }
 
     System.gc(); // try and help with memory issues
@@ -815,7 +762,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
     Map<String, Artifact> checklist = new HashMap<String, Artifact>();
 
     for( Artifact artifact : uncheckedArtifacts ) {
-      if (artifact.getGroupId().equals("jline")) continue;
 //      resolvedArtifacts.add(artifact);
       checklist.put(artifactToKey(artifact), artifact);
 //      resolvedArtifacts.add(artifact);
@@ -824,7 +770,6 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
 	  // major breaking change, no dependencies from plugin
 	  /*
     for( Artifact artifact : getResolvedArtifactsFromUnresolvedDependencies(replaceVersion(filterGrailsDependencies(pluginProject.getDependencies())), true) ) {
-      if (artifact.getGroupId().equals("jline")) continue;
 
 //      resolvedArtifacts.add(artifact);
 
@@ -1054,9 +999,9 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       throw new MojoExecutionException("Unable to complete configuring the build settings", e);
     }
 
-//    for (Artifact artifact : resolvedArtifacts) {
-//      System.out.println("matched " + artifact.toString());
-//    }
+    for (Artifact artifact : resolvedArtifacts) {
+      System.out.println("matched " + artifact.toString());
+    }
 
     return resolvedArtifacts;
   }
@@ -1219,6 +1164,19 @@ public abstract class AbstractGrailsMojo extends AbstractMojo {
       } catch (ArchiverException e) {
         throw new MojoExecutionException("Unable to extract zip", e);
       }
+	    try {
+		    File inputPom = new File(plugin.getFile().getParentFile(), pluginName + "-" + pluginVersion + ".pom");
+		    File outputPom = new File(targetDir, "pom.xml");
+		    getLog().info(String.format("copying %s to %s", inputPom.getAbsolutePath(), outputPom.getAbsolutePath()));
+		    FileReader fr = new FileReader(inputPom);
+		    FileWriter fw = new FileWriter(outputPom);
+		    IOUtils.copy(fr, fw);
+		    fw.flush();
+		    fw.close();
+		    fr.close();
+	    } catch (IOException e) {
+		    throw new MojoExecutionException("Unable to copy pom.xml file");
+	    }
     } else {
       getLog().info(String.format("Plugin %s:%s already installed (%s)", pluginName, pluginVersion, targetDir.getAbsolutePath()));
     }
